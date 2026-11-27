@@ -10,7 +10,9 @@ Google 로그인으로 각자 자기 기록(체크, 보유 수량, 구매 링크
 | `index.html` | 앱 전체 (화면 + 물품 데이터 + 로그인·저장 코드) |
 | `manifest.json` | 휴대폰 홈 화면에 앱으로 설치할 때 쓰는 정보 |
 | `sw.js` | 오프라인에서도 앱 화면이 열리게 해 주는 파일 |
-| `icon.svg` | 앱 아이콘 |
+| `img/` | 앱 아이콘·홈 화면 아이콘·로그인 캐릭터 (PNG) |
+| `fonts/` | 카페24 PRO Slim 웹폰트 (Air·Fit·Max)와 라이선스 (SIL OFL 1.1) |
+| `icon.svg` | 예전 아이콘 (지금은 쓰지 않음) |
 | `firestore.rules` | Firestore 보안 규칙 (GitHub에는 안 올려도 됨, Firebase 콘솔에 붙여넣기) |
 
 ## 1. Firebase 프로젝트 만들기 (처음 한 번)
