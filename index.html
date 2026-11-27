@@ -147,6 +147,30 @@ footer{font-size:12px;color:var(--dim);text-align:center;padding:8px}
 button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,a:focus-visible{outline:2px solid var(--green);outline-offset:2px}
 @media (max-width:640px){.stages{grid-template-columns:repeat(3,minmax(0,1fr))}.buy .grid{grid-template-columns:1fr 1fr}.buy .grid label:first-child{grid-column:1/-1}}
 @media (max-width:480px){.stages{grid-template-columns:repeat(2,minmax(0,1fr))}.row{grid-template-columns:26px 1fr}.qty{grid-column:2;justify-items:start;grid-auto-flow:column;gap:10px;align-items:center}.buy{margin-left:0}.who span{display:none}}
+/* 가족 구성 */
+.fam{display:grid;gap:12px}
+.fam .box{background:var(--surface);border:1px solid var(--line);padding:16px;display:grid;gap:12px}
+.fam h3{margin:0;font-size:16px}
+.stepper{display:inline-flex;align-items:center;border:1px solid var(--line2)}
+.stepper button{width:40px;height:40px;background:var(--surface2);border:0;color:var(--ink);font-size:20px;font-weight:800}
+.stepper button:disabled{opacity:.35}
+.stepper output{min-width:56px;text-align:center;font-family:var(--mono);font-size:20px}
+.frow{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.switch{display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:14px}
+.switch input{width:20px;height:20px;accent-color:var(--green)}
+.members{display:grid;gap:8px}
+.member{border:1px solid var(--line2);background:var(--bg);padding:10px;display:grid;gap:8px}
+.member .top{display:grid;grid-template-columns:28px 1fr 1fr 1fr auto;gap:6px;align-items:center}
+.member .no{font-family:var(--mono);color:var(--green-deep)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips label{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line2);padding:4px 9px;font-size:12.5px;cursor:pointer}
+.chips label:has(input:checked){border-color:var(--green);color:var(--green-deep)}
+.chips input{accent-color:var(--green)}
+.famsum{display:grid;gap:4px;font-size:13px;color:var(--muted)}
+.famsum b{color:var(--ink)}
+.addlist{display:flex;flex-wrap:wrap;gap:6px}
+.addlist span{border:1px dashed var(--line2);padding:2px 8px;font-size:12px}
+@media (max-width:480px){.member .top{grid-template-columns:24px 1fr 1fr auto}.member .top input{grid-column:2 / 4}}
 @media (prefers-reduced-motion:no-preference){.mini i{transition:width .3s}}
 </style>
 </head>
@@ -176,7 +200,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visi
 <!-- 앱 화면 -->
 <div id="app" class="wrap hidden">
   <div class="topbar">
-    <div class="brand"><img src="img/brand-96.png" width="40" height="40" alt=""><div><h1>우리집 비상 비축</h1><div class="sub">TAC-READY // 4P</div></div></div>
+    <div class="brand"><img src="img/brand-96.png" width="40" height="40" alt=""><div><h1>우리집 비상 비축</h1><div class="sub" id="brandSub">TAC-READY // 4P</div></div></div>
     <div class="who"><img id="avatar" alt="" referrerpolicy="no-referrer"><span id="uname"></span><button type="button" class="btn small" id="btnLogout">로그아웃</button></div>
   </div>
   <div class="status" id="status" role="status">불러오는 중…</div>
@@ -185,6 +209,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visi
     <button type="button" role="tab" data-tab="items" aria-selected="true">물품표</button>
     <button type="button" role="tab" data-tab="budget" aria-selected="false">예산</button>
     <button type="button" role="tab" data-tab="routine" aria-selected="false">월간 점검</button>
+    <button type="button" role="tab" data-tab="family" aria-selected="false" id="tabFam">가족 구성</button>
   </div>
 
   <section id="pane-items" style="display:grid;gap:12px">
@@ -219,6 +244,22 @@ button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visi
       <div class="rhead"><b>매월 첫 토요일 점검</b><label class="muted" style="font-size:13px">점검 월 <select id="month"></select></label></div>
       <div id="routine"></div>
     </div>
+  </section>
+
+  <section id="pane-family" class="hidden fam">
+    <div class="box">
+      <div class="frow"><div><h3>가족 인원</h3><div class="muted" style="font-size:13px">인원에 맞춰 단계별 물·식량·장비 수량이 다시 계산됩니다.</div></div>
+        <div class="stepper"><button type="button" data-step="n" data-d="-1" aria-label="인원 줄이기">−</button><output id="famN">4</output><button type="button" data-step="n" data-d="1" aria-label="인원 늘리기">+</button></div></div>
+      <div class="frow"><div><h3>반려동물</h3><div class="muted" style="font-size:13px">사료·목줄·이동장이 단계별로 추가됩니다.</div></div>
+        <div class="stepper"><button type="button" data-step="pets" data-d="-1" aria-label="반려동물 줄이기">−</button><output id="famP">0</output><button type="button" data-step="pets" data-d="1" aria-label="반려동물 늘리기">+</button></div></div>
+    </div>
+    <div class="box">
+      <div class="frow"><div><h3>연령·성별 세부 설정</h3><div class="muted" style="font-size:13px">켜면 가족 한 명씩 연령·성별·필요 사항을 고르고, 맞춤 품목(기저귀·분유·생리용품·여벌 안경 등)이 자동으로 들어갑니다.</div></div>
+        <label class="switch"><input type="checkbox" id="famDetail"> 사용</label></div>
+      <div id="famMembers" class="members"></div>
+      <div id="famAddWrap" class="hidden"><button type="button" class="btn small" id="famAdd">+ 가족 추가</button></div>
+    </div>
+    <div class="box"><h3>계산 기준</h3><div class="famsum" id="famSum"></div></div>
   </section>
 
   <footer>이 앱은 일반적인 대비 참고용입니다. 실제 상황에서는 정부·지자체 안내(국민재난안전포털, 재난 방송)를 따르세요.</footer>
@@ -482,11 +523,116 @@ const host = u => { try { return new URL(u).hostname.replace(/^www\.|^m\./,''); 
 
 STAGES.forEach(s => s.items = s.items.map((r,i) => Array.isArray(r) ? ({id:s.id+'-'+String(i+1).padStart(2,'0'), cat:r[0], name:r[1], unit:r[2], q:r[3], note:r[4], from:r[5], eq:!!r[6]}) : r));
 const ICONS = {"S1": "<path d=\"M7 18v-5a5 5 0 0 1 10 0v5\"/><path d=\"M5 18h14v3H5z\"/><path d=\"M12 3v2M4.2 6.2l1.4 1.4M19.8 6.2l-1.4 1.4M2 12h2M20 12h2\"/>", "S2": "<path d=\"M8 6V4h8v2\"/><rect x=\"5\" y=\"6\" width=\"14\" height=\"15\" rx=\"2\"/><path d=\"M9 21v-6h6v6M9 11h6\"/>", "S3": "<path d=\"M2 16V7h11v9\"/><path d=\"M13 10h4l4 4v2h-8\"/><circle cx=\"6.5\" cy=\"17.5\" r=\"2\"/><circle cx=\"17.5\" cy=\"17.5\" r=\"2\"/>", "S4": "<path d=\"M3 20h18\"/><path d=\"M5 20v-8l7-6 7 6v8\"/><path d=\"M10 20v-5h4v5\"/><path d=\"M2 12l10-8 10 8\"/>", "S5": "<rect x=\"3\" y=\"7\" width=\"18\" height=\"13\"/><path d=\"M3 11h18M12 7v13M7 4h10l4 3H3z\"/>"};
-const ALL = STAGES.flatMap(s => s.items.map(it => ({...it, stage:s.id})));
-const BYID = Object.fromEntries(ALL.map(it => [it.id, it]));
+/* ---------- 가족 구성 → 수량 계산 ---------- */
+// 기본 물품표는 4인 기준. 인원·연령에 맞게 다시 계산하고, 세부 설정 시 맞춤 품목을 붙인다.
+STAGES.forEach(s => { s.base = s.items.map(it => ({...it, q0:it.q, note0:it.note})); s.principle0 = s.principle; s.acts0 = s.acts.slice(); });
+const AGES = [['infant','영유아 (0~2세)'],['child','어린이 (3~12세)'],['teen','청소년 (13~18세)'],['adult','성인 (19~64세)'],['senior','어르신 (65세 이상)']];
+const FLAGS = [['rx','처방약 복용'],['gl','안경·렌즈'],['al','식품 알레르기'],['dv','의료기기 사용'],['ad','성인용 기저귀']];
+const FOODW = {infant:.5, child:.75, teen:1, adult:1, senior:1};
+// 이름으로 지정하는 특수 규칙
+const OVR = {'아이 명찰 (이름·보호자 연락처)':'kid', '생리용품':'fem', '여분 안경·렌즈':'gl', '기저귀':'diaper', '분유·이유식·환자식':'infantdirect', '본인 처방약 1~3일분':'rx', '처방약 7일분 + 처방 기록 메모':'rx', '처방약 14일분':'rx', '처방약 76일분':'rx'};
+// 맞춤 품목: [단계, 키, 대분류, 품목, 단위, 1인당 수량, 기준, 메모, 장비]
+const GEN = [
+ ['S1','dp','D','기저귀','개',4,'I','영유아 1인 4개',0],
+ ['S1','fm','B','액상분유·이유식 파우치','개',2,'I','',0],
+ ['S1','ld','D','생리대 (소형)','개',2,'F','',0],
+ ['S1','ad','D','성인용 기저귀','개',2,'AD','',0],
+ ['S2','dp','D','기저귀','개',24,'I','하루 8개 × 3일',0],
+ ['S2','fm','B','액상분유·이유식 파우치','개',9,'I','하루 3회 × 3일',0],
+ ['S2','bt','C','젖병·젖꼭지 세트','세트',1,'I','',1],
+ ['S2','cr','I','아기띠','개',1,'I','유모차 대신',1],
+ ['S2','bw','D','아기 물티슈','팩',1,'I','',0],
+ ['S2','km','E','어린이 해열제 (시럽·좌약)','세트',1,'KIDS','아이들 공용 1세트',0],
+ ['S2','ty','J','작은 장난감·색칠공부','세트',1,'C','대피 중 마음 안정',1],
+ ['S2','sm','E','어르신 상비약 (파스·소화제)','세트',1,'SEN','',0],
+ ['S2','gl','E','여벌 안경 (케이스 포함)','개',1,'GL','',1],
+ ['S2','al','E','항히스타민제·알레르기 대체 간식','세트',1,'AL','성분표 확인',0],
+ ['S2','dv','E','의료기기 예비 배터리·소모품','세트',1,'DV','보청기·혈당측정기 등',0],
+ ['S2','ad','D','성인용 기저귀','개',9,'AD','하루 3개 × 3일',0],
+ ['S2','pf','B','반려동물 사료·물','마리분',1,'P','3일분',0],
+ ['S2','pl','I','반려동물 목줄·이동장','세트',1,'P','',1],
+ ['S3','dp','D','기저귀','개',56,'I','7일',0],
+ ['S3','fm','B','분유·이유식','개',21,'I','7일',0],
+ ['S3','bw','D','아기 물티슈','팩',3,'I','',0],
+ ['S3','ld','D','생리용품','팩',1,'F','',0],
+ ['S3','ad','D','성인용 기저귀','개',21,'AD','7일',0],
+ ['S3','pf','B','반려동물 사료','마리분',1,'P','7일분',0],
+ ['S4','dp','D','기저귀','개',112,'I','14일',0],
+ ['S4','fm','B','분유·이유식','개',42,'I','14일',0],
+ ['S4','bw','D','아기 물티슈','팩',4,'I','',0],
+ ['S4','ld','D','생리용품','팩',1,'F','',0],
+ ['S4','bp','E','혈압계','대',1,'SEN','',1],
+ ['S4','dv','E','의료기기 소모품 14일분','세트',1,'DV','',0],
+ ['S4','al','B','알레르기 대체 식품 14일분','세트',1,'AL','',0],
+ ['S4','ad','D','성인용 기저귀','개',42,'AD','14일',0],
+ ['S4','pf','B','반려동물 사료','마리분',1,'P','14일분',0],
+ ['S5','fm','B','분유·이유식','개',228,'I','76일',0],
+ ['S5','bw','D','아기 물티슈','팩',12,'I','',0],
+ ['S5','kd','E','유아·어린이 상비약 보충','세트',1,'KIDS','',0],
+ ['S5','dv','E','의료기기 소모품 76일분','세트',1,'DV','',0],
+ ['S5','al','B','알레르기 대체 식품 76일분','세트',1,'AL','',0],
+ ['S5','ad','D','성인용 기저귀','개',228,'AD','76일',0],
+ ['S5','pf','B','반려동물 사료','마리분',1,'P','76일분',0]
+];
+function famNorm(f){
+  f = f || {};
+  const members = Array.isArray(f.members) ? f.members.slice(0,12).map(m => ({a: AGES.some(x=>x[0]===m?.a) ? m.a : 'adult', s: m?.s==='f' ? 'f' : 'm', l: String(m?.l ?? '').slice(0,10), o: Array.isArray(m?.o) ? m.o.filter(k => FLAGS.some(x=>x[0]===k)) : []})) : [];
+  const n = Math.min(12, Math.max(1, Math.floor(Number(f.n)) || 4));
+  return {n, detail: !!f.detail && members.length > 0, members, pets: Math.min(10, Math.max(0, Math.floor(Number(f.pets)) || 0))};
+}
+function household(f){
+  const c = {H:f.n, FOOD:f.n, I:0, C:0, KIDS:0, SEN:0, F:0, GL:0, AL:0, DV:0, AD:0, RX:0, P:f.pets, detail:f.detail};
+  if (f.detail){
+    const m = f.members; c.H = m.length;
+    c.FOOD = m.reduce((a,x)=>a+FOODW[x.a],0);
+    c.I = m.filter(x=>x.a==='infant').length; c.C = m.filter(x=>x.a==='child').length;
+    c.KIDS = (c.I + c.C) > 0 ? 1 : 0; c.SEN = m.some(x=>x.a==='senior') ? 1 : 0;
+    c.F = m.filter(x=>x.s==='f' && (x.a==='teen' || x.a==='adult')).length;
+    const has = k => m.filter(x=>x.o.includes(k)).length;
+    c.GL = has('gl'); c.AL = has('al'); c.DV = has('dv'); c.AD = has('ad'); c.RX = has('rx');
+  }
+  return c;
+}
+function modeOf(it){
+  if (OVR[it.name]) return OVR[it.name];
+  if (it.from || it.q0 === 0) return 'f';
+  if (it.eq) return it.q0 === 4 ? 'head' : 'f';
+  if (['세트','원칙','원'].includes(it.unit)) return 'f';
+  return (it.cat === 'A' || it.cat === 'B') ? 'food' : 'head';
+}
+const relabel = (t, H) => String(t).replace(/4인/g, H+'인').replace(/배낭 4개/g, '배낭 '+H+'개');
+let ALL = [], BYID = {}, HH = household(famNorm());
+function applyFamily(){
+  const f = famNorm(state.family); HH = household(f);
+  STAGES.forEach(s => {
+    const items = [];
+    s.base.forEach(b => {
+      const m = modeOf(b); let q = b.q0, hide = false, unit = b.unit;
+      if (m === 'head') q = Math.ceil(b.q0 * HH.H / 4);
+      else if (m === 'food') q = Math.ceil(b.q0 * HH.FOOD / 4);
+      else if (HH.detail){
+        if (m === 'kid') { q = HH.I + HH.C; hide = !q; }
+        else if (m === 'fem') { q = (s.id === 'S5' ? 3 : b.q0) * HH.F; hide = !q; }
+        else if (m === 'gl') { q = HH.GL; hide = !q; }
+        else if (m === 'diaper') { q = 608 * HH.I; hide = !q; unit = '개'; }
+        else if (m === 'infantdirect') { hide = HH.I > 0; }
+        else if (m === 'rx') { q = HH.RX; hide = !q; }
+      }
+      if (!hide) items.push({...b, q, unit, note: m === 'f' ? b.note0 : relabel(b.note0, HH.H)});
+    });
+    GEN.filter(g => g[0] === s.id).forEach(g => {
+      const basis = HH[g[6]] || 0; if (!basis || (!HH.detail && g[6] !== 'P')) return;
+      items.push({id: s.id+'-x-'+g[1], cat:g[2], name:g[3], unit:g[4], q:g[5]*basis, q0:0, note:g[7], from:'', eq:!!g[8], gen:true});
+    });
+    s.items = items; s.principle = relabel(s.principle0, HH.H); s.acts = s.acts0.map(a => relabel(a, HH.H));
+  });
+  ALL = STAGES.flatMap(s => s.items.map(it => ({...it, stage:s.id})));
+  BYID = Object.fromEntries(ALL.map(it => [it.id, it]));
+  $('#brandSub').textContent = 'TAC-READY // ' + HH.H + 'P';
+}
 
 let uid = null, ref = null, unsub = null;
-let state = {have:{}, done:{}, routine:{}, buy:{}};
+let state = {have:{}, done:{}, routine:{}, buy:{}, family:null};
 let ui = {stage:'S1', tab:'items', openBuy:new Set()};
 let saveTimer = null, saving = false, pending = false, dirty = false;
 
@@ -514,7 +660,7 @@ function renderHero(){
   const s = cur();
   const total = own(s).reduce((a,it)=>a+(cost(it,'need')||0),0);
   $('#hero').innerHTML = `<h2><span class="code">${s.id}</span>${s.name}</h2>
-    <div class="facts"><span class="fact"><b>출발</b>${s.time}</span><span class="fact"><b>이동</b>${s.move}</span><span class="fact"><b>기간</b>${s.dur}</span><span class="fact"><b>보관</b>${s.where}</span>${total?`<span class="fact"><b>예산</b>${won(total)}</span>`:''}</div>
+    <div class="facts"><span class="fact"><b>인원</b>${HH.H}명${HH.P?` · 반려 ${HH.P}`:''}</span><span class="fact"><b>출발</b>${s.time}</span><span class="fact"><b>이동</b>${s.move}</span><span class="fact"><b>기간</b>${s.dur}</span><span class="fact"><b>보관</b>${s.where}</span>${total?`<span class="fact"><b>예산</b>${won(total)}</span>`:''}</div>
     <p style="margin:0;font-size:14px;color:var(--muted)">${s.principle}</p>
     <div class="actions"><b>${s.id==='S4'||s.id==='S5'?'상황 시작 직후 할 일':'출발 순서'}</b><ol>${s.acts.map(a=>`<li>${a}</li>`).join('')}</ol></div>`;
 }
@@ -554,7 +700,7 @@ function renderItems(){
         <div class="row">
           <input type="checkbox" id="c_${it.id}" data-id="${it.id}" ${d?'checked':''} aria-label="${esc(it.name)} 준비 완료">
           <div><label class="name" for="c_${it.id}">${esc(it.name)}</label>
-            <div style="margin-top:3px"><span class="tag ${it.eq?'eq':''}">${it.eq?'장비':'소모품'}</span>${c!==null?`<span class="tag price num">${won(c)}</span>`:''}</div>
+            <div style="margin-top:3px"><span class="tag ${it.eq?'eq':''}">${it.eq?'장비':'소모품'}</span>${it.gen?'<span class="tag" style="border-color:var(--green);color:var(--green-deep)">맞춤</span>':''}${c!==null?`<span class="tag price num">${won(c)}</span>`:''}</div>
             ${it.note?`<div class="note">${esc(it.note)}</div>`:''}</div>
           <div class="qty"><span class="goal">필요 <b class="num">${direct?'직접 입력':it.q.toLocaleString('ko-KR')}</b> ${direct?'':esc(it.unit)}</span>
             <label class="have">보유 <input type="number" min="0" inputmode="numeric" data-have="${it.id}" value="${esc(h)}" aria-label="${esc(it.name)} 보유 수량"></label>
@@ -599,7 +745,49 @@ function renderRoutine(){
   const m = $('#month').value, done = state.routine[m] || {};
   $('#routine').innerHTML = ROUTINE.map(([k,t,d,w]) => `<div class="r"><input type="checkbox" id="r_${k}" data-r="${k}" ${done[k]?'checked':''}><label for="r_${k}"><b>${t}</b><div class="muted" style="font-size:13.5px">${d}</div><div class="when">${w}</div></label></div>`).join('');
 }
-function renderAll(){ renderStages(); renderHero(); renderItems(); renderBudget(); renderRoutine(); }
+function renderFamily(){
+  const f = famNorm(state.family);
+  $('#famN').textContent = HH.H; $('#famP').textContent = f.pets;
+  document.querySelectorAll('[data-step="n"]').forEach(b => { b.disabled = f.detail || (b.dataset.d==='-1' ? f.n<=1 : f.n>=12); });
+  document.querySelectorAll('[data-step="pets"]').forEach(b => { b.disabled = b.dataset.d==='-1' ? f.pets<=0 : f.pets>=10; });
+  $('#famDetail').checked = f.detail;
+  $('#famAddWrap').classList.toggle('hidden', !f.detail || f.members.length >= 12);
+  $('#famMembers').innerHTML = !f.detail ? '' : f.members.map((m,i) => `<div class="member" data-m="${i}">
+    <div class="top"><span class="no">#${i+1}</span>
+      <input type="text" maxlength="10" placeholder="호칭 (예: 아빠)" data-mf="l" value="${esc(m.l)}" aria-label="${i+1}번 가족 호칭">
+      <select data-mf="a" aria-label="${i+1}번 가족 연령">${AGES.map(([k,t])=>`<option value="${k}" ${m.a===k?'selected':''}>${t}</option>`).join('')}</select>
+      <select data-mf="s" aria-label="${i+1}번 가족 성별"><option value="m" ${m.s==='m'?'selected':''}>남</option><option value="f" ${m.s==='f'?'selected':''}>여</option></select>
+      <button type="button" class="btn small" data-mdel="${i}" ${f.members.length<=1?'disabled':''} aria-label="${i+1}번 가족 삭제">삭제</button></div>
+    <div class="chips">${FLAGS.map(([k,t])=>`<label><input type="checkbox" data-mo="${k}" ${m.o.includes(k)?'checked':''}> ${t}</label>`).join('')}</div></div>`).join('');
+  const gen = [...new Set(ALL.filter(it=>it.gen).map(it=>it.name))];
+  $('#famSum').innerHTML = `<div>장비·위생 수량 <b>${HH.H}인분</b> · 물·식량 <b>${Math.round(HH.FOOD*100)/100}인분</b>${f.detail?' (영유아 0.5, 어린이 0.75명으로 계산)':''}</div>
+    <div>기본 물품표는 4인 기준이며, 인원에 비례해 올림 계산합니다. 공용 장비(버너·라디오 등)는 인원과 관계없이 그대로입니다.</div>
+    ${gen.length?`<div>추가된 맞춤 품목</div><div class="addlist">${gen.map(n=>`<span>${esc(n)}</span>`).join('')}</div>`:''}`;
+}
+function renderAll(){ applyFamily(); renderStages(); renderHero(); renderItems(); renderBudget(); renderRoutine(); renderFamily(); }
+function setFamily(f){ state.family = famNorm(f); applyFamily(); renderStages(); renderHero(); renderItems(); renderFamily(); save(); }
+$('#pane-family').addEventListener('click', e => {
+  const st = e.target.closest('button[data-step]');
+  if (st){ const f = famNorm(state.family); const k = st.dataset.step; f[k] = f[k] + Number(st.dataset.d); setFamily(f); return; }
+  const del = e.target.closest('button[data-mdel]');
+  if (del){ const f = famNorm(state.family); f.members.splice(Number(del.dataset.mdel),1); f.n = f.members.length; setFamily(f); return; }
+  if (e.target.closest('#famAdd')){ const f = famNorm(state.family); f.members.push({a:'adult', s:'m', l:'', o:[]}); f.n = f.members.length; setFamily(f); }
+});
+$('#pane-family').addEventListener('change', e => {
+  const f = famNorm(state.family);
+  if (e.target.id === 'famDetail'){
+    if (e.target.checked){
+      if (!f.members.length) f.members = Array.from({length:f.n}, (_,i) => ({a: i<2 ? 'adult' : 'child', s: i===1 ? 'f' : 'm', l: ['아빠','엄마'][i] || '', o:[]}));
+      f.detail = true;
+    } else { f.n = f.members.length || f.n; f.detail = false; }
+    setFamily(f); return;
+  }
+  const card = e.target.closest('[data-m]'); if (!card) return;
+  const m = f.members[Number(card.dataset.m)]; if (!m) return;
+  if (e.target.dataset.mf){ m[e.target.dataset.mf] = e.target.dataset.mf==='l' ? e.target.value.trim().slice(0,10) : e.target.value; }
+  if (e.target.dataset.mo){ const k = e.target.dataset.mo; m.o = e.target.checked ? [...new Set([...m.o, k])] : m.o.filter(x=>x!==k); }
+  setFamily(f);
+});
 
 /* ---------- 저장 ---------- */
 function save(){ dirty = true; clearTimeout(saveTimer); saveTimer = setTimeout(flush, 800); setStatus('저장 대기 중…'); }
@@ -607,7 +795,7 @@ async function flush(){
   if (!ref) return;
   if (saving){ pending = true; return; }
   saving = true; dirty = false;
-  try { await setDoc(ref, {have:state.have, done:state.done, routine:state.routine, buy:state.buy, updatedAt:serverTimestamp()}); setStatus('저장됨'); }
+  try { await setDoc(ref, {have:state.have, done:state.done, routine:state.routine, buy:state.buy, family:famNorm(state.family), updatedAt:serverTimestamp()}); setStatus('저장됨'); }
   catch(e){ console.error(e); setStatus('저장하지 못했습니다. 인터넷 연결을 확인해 주세요 (연결되면 다시 저장됩니다)'); dirty = true; }
   saving = false; if (pending){ pending = false; flush(); }
 }
@@ -623,7 +811,7 @@ $('#bMode').addEventListener('change', renderBudget);
 document.querySelector('.tabs').addEventListener('click', e => {
   const b = e.target.closest('button[data-tab]'); if(!b) return; ui.tab = b.dataset.tab;
   document.querySelectorAll('.tabs button').forEach(x => x.setAttribute('aria-selected', String(x===b)));
-  ['items','budget','routine'].forEach(t => $('#pane-'+t).classList.toggle('hidden', t!==ui.tab));
+  ['items','budget','routine','family'].forEach(t => $('#pane-'+t).classList.toggle('hidden', t!==ui.tab));
   if (ui.tab==='budget') renderBudget();
 });
 $('#cats').addEventListener('click', e => {
@@ -681,11 +869,11 @@ onAuthStateChanged(auth, user => {
   $('#login').classList.add('hidden'); $('#app').classList.remove('hidden');
   $('#uname').textContent = user.displayName || user.email || '';
   if (user.photoURL) $('#avatar').src = user.photoURL; else $('#avatar').classList.add('hidden');
-  state = {have:{}, done:{}, routine:{}, buy:{}}; renderAll(); setStatus('기록 불러오는 중…');
+  state = {have:{}, done:{}, routine:{}, buy:{}, family:null}; renderAll(); setStatus('기록 불러오는 중…');
   unsub = onSnapshot(ref, snap => {
     if (snap.metadata.hasPendingWrites || dirty) return;
     const d = snap.exists() ? snap.data() : {};
-    state = {have:{...(d.have||{})}, done:{...(d.done||{})}, routine:JSON.parse(JSON.stringify(d.routine||{})), buy:JSON.parse(JSON.stringify(d.buy||{}))};
+    state = {have:{...(d.have||{})}, done:{...(d.done||{})}, routine:JSON.parse(JSON.stringify(d.routine||{})), buy:JSON.parse(JSON.stringify(d.buy||{})), family:d.family ? famNorm(d.family) : null};
     setStatus(snap.metadata.fromCache ? '오프라인 · 저장된 기록을 보여주고 있어요' : (snap.exists() ? '저장됨' : '처음 오셨네요! 1단계부터 체크해 보세요'));
     renderAll();
   }, err => { console.error(err); setStatus('기록을 불러오지 못했습니다. 새로고침해 주세요'); });

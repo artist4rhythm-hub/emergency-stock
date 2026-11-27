@@ -1,6 +1,6 @@
 // 앱 화면 파일만 캐시합니다. 로그인·데이터는 Firebase가 직접 처리합니다.
 // index.html을 고친 뒤에는 아래 버전 숫자를 올려야 사용자 기기에 새 화면이 반영됩니다.
-const CACHE = 'ebx-v4';
+const CACHE = 'ebx-v5';
 const SHELL = ['./', './index.html', './manifest.json', './img/icon-192.png', './img/mascot.png', './img/brand-96.png'];
 
 self.addEventListener('install', e => {

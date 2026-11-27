@@ -22,12 +22,23 @@ service cloud.firestore {
 
     // 저장 문서는 정해진 필드만, 정해진 타입으로만 허용
     function validState(d) {
-      return d.keys().hasOnly(['have', 'done', 'routine', 'buy', 'updatedAt'])
+      return d.keys().hasOnly(['have', 'done', 'routine', 'buy', 'family', 'updatedAt'])
         && d.have is map && d.have.size() <= 500
         && d.done is map && d.done.size() <= 500
         && d.routine is map && d.routine.size() <= 120
         && d.buy is map && d.buy.size() <= 500
+        && (!('family' in d) || validFamily(d.family))
         && d.updatedAt == request.time;
+    }
+
+    // 가족 구성: 인원 1~12명, 세부 구성원 최대 12명, 반려동물 0~10
+    function validFamily(f) {
+      return f is map
+        && f.keys().hasOnly(['n', 'detail', 'members', 'pets'])
+        && f.n is int && f.n >= 1 && f.n <= 12
+        && f.detail is bool
+        && f.members is list && f.members.size() <= 12
+        && f.pets is int && f.pets >= 0 && f.pets <= 10;
     }
   }
 }
