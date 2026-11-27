@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1a1d18">
+<meta name="description" content="4인 가족 비상 대비 물품을 상황 5단계로 나눠 체크하고, 구매 링크와 가격으로 예산을 계산하는 앱">
+<title>우리집 비상 비축</title>
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<style>
+/* 테마: 디지털 카모 전술 — 어두운 야전 화면 + 픽셀 위장무늬 + 주황 포인트. 레이아웃: 로그인 / 앱(상단 바 → 탭) */
+:root{
+  --bg:#1a1d18; --surface:#232820; --surface2:#2b3127; --line:#3a4234; --line2:#4f5944;
+  --ink:#e8ece4; --muted:#a3ad97; --dim:#7d8873;
+  --green:#e07a1f; --green-deep:#f29a4a; --green-soft:rgba(224,122,31,.14); --green-line:#5a4a33;
+  --ok:#9cc46f; --warn:#ff8a3d; --warn-soft:rgba(255,138,61,.12);
+  --share:#8fb0cf; --share-soft:rgba(143,176,207,.10); --on-accent:#16130e;
+  --font:'Malgun Gothic','맑은 고딕','Apple SD Gothic Neo','Noto Sans KR',system-ui,sans-serif;
+  --display:'Black Han Sans','Malgun Gothic',sans-serif;
+  --mono:'Share Tech Mono',ui-monospace,Menlo,Consolas,monospace;
+  --camo:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' shape-rendering='crispEdges'%3E%3Cg fill='%23262c22'%3E%3Crect x='0' y='0' width='12' height='12'/%3E%3Crect x='24' y='12' width='24' height='12'/%3E%3Crect x='60' y='0' width='12' height='24'/%3E%3Crect x='84' y='36' width='12' height='12'/%3E%3Crect x='12' y='60' width='24' height='12'/%3E%3Crect x='48' y='72' width='12' height='12'/%3E%3Crect x='72' y='84' width='24' height='12'/%3E%3C/g%3E%3Cg fill='%232d3428'%3E%3Crect x='12' y='24' width='12' height='12'/%3E%3Crect x='48' y='36' width='24' height='12'/%3E%3Crect x='0' y='84' width='12' height='12'/%3E%3Crect x='72' y='60' width='12' height='12'/%3E%3C/g%3E%3C/svg%3E");
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg) var(--camo);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.5;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+.wrap{max-width:960px;margin:0 auto;padding:16px 16px 60px;display:grid;gap:14px}
+h1,h2,h3{font-family:var(--display);font-weight:400;letter-spacing:.01em;margin:0}
+h1{font-size:22px;color:var(--ink)} h2{font-size:20px;color:var(--ink)} h3{font-size:16px}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:var(--mono)}
+.muted{color:var(--muted)}
+.hidden{display:none!important}
+button{font:inherit;cursor:pointer}
+.btn{border:1.5px solid var(--green);background:transparent;color:var(--green-deep);border-radius:4px;padding:8px 14px;font-weight:800;font-size:14px}
+.btn:hover{background:var(--green-soft)}
+.btn.primary{background:var(--green);color:var(--on-accent)}
+.btn.small{padding:4px 10px;font-size:12.5px}
+/* 로그인 */
+#login{min-height:100%;display:grid;place-items:center;padding:24px}
+.login-card{max-width:440px;width:100%;background:var(--surface);border:1px solid var(--line2);border-top:4px solid var(--green);padding:28px 24px;display:grid;gap:16px;text-align:center}
+.login-card .mascot{width:120px;height:120px;margin:0 auto;image-rendering:pixelated}
+.login-card .tagline{font-family:var(--mono);color:var(--green-deep);font-size:13px;letter-spacing:.12em}
+.login-card ul{text-align:left;margin:0;padding-left:20px;display:grid;gap:4px;font-size:14px;color:var(--muted)}
+.gbtn{display:flex;align-items:center;justify-content:center;gap:10px;border:1.5px solid var(--green);background:var(--green);color:var(--on-accent);border-radius:4px;padding:12px;font-weight:900;font-size:15px}
+.err{color:var(--warn);font-size:13px;min-height:1em}
+/* 상단 */
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--green);padding:10px 12px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand svg{width:40px;height:40px;flex:none}
+.brand .sub{font-family:var(--mono);font-size:11px;color:var(--green-deep);letter-spacing:.12em}
+.who{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.who img{width:28px;height:28px;border-radius:4px;border:1px solid var(--line2)}
+.status{font-size:12px;color:var(--dim);font-family:var(--mono)}
+.tabs{display:flex;gap:4px;border-bottom:2px solid var(--line);overflow-x:auto}
+.tabs button{border:0;background:none;font-family:var(--display);font-size:16px;padding:10px 14px;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap}
+.tabs button[aria-selected="true"]{color:var(--green-deep);border-bottom-color:var(--green)}
+/* 단계 카드 */
+.stages{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.st{border:1px solid var(--line2);background:var(--surface);border-radius:4px;padding:10px;text-align:left;color:var(--ink);display:grid;gap:5px}
+.st:hover{border-color:var(--green-line)}
+.st[aria-pressed="true"]{border-color:var(--green);box-shadow:0 0 0 1px var(--green) inset;background:var(--surface2)}
+.st .ic{width:30px;height:30px;color:var(--muted)}
+.st[aria-pressed="true"] .ic{color:var(--green)}
+.st .code{font-family:var(--mono);font-size:12px;color:var(--green-deep)}
+.st .nm{font-family:var(--display);font-size:16px}
+.st .sm{font-size:11.5px;color:var(--dim)}
+.mini{height:6px;background:var(--line);overflow:hidden}
+.mini i{display:block;height:100%;background:var(--green)}
+.st .pc{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.hero{background:var(--surface);border:1px solid var(--line);padding:16px;display:grid;gap:12px;position:relative}
+.hero h2{display:flex;align-items:center;gap:10px}
+.hero h2 .code{font-family:var(--mono);font-size:14px;color:var(--on-accent);background:var(--green);padding:1px 8px}
+.facts{display:flex;flex-wrap:wrap;gap:8px}
+.fact{border:1px solid var(--line2);color:var(--ink);padding:4px 10px;font-size:13px}
+.fact b{font-family:var(--mono);color:var(--green-deep);font-weight:400;margin-right:4px}
+.actions{border:1px dashed var(--green-line);background:var(--warn-soft);padding:10px 14px}
+.actions b{color:var(--warn);font-size:13.5px;font-family:var(--display);font-weight:400}
+.actions ol{margin:6px 0 0;padding-left:20px;display:grid;gap:3px;font-size:14px}
+.controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+select,input[type=text],input[type=url],input[type=number]{font:inherit;font-size:13.5px;padding:7px 10px;border:1px solid var(--line2);border-radius:3px;background:var(--bg);color:var(--ink)}
+input::placeholder{color:var(--dim)}
+.chk{display:inline-flex;align-items:center;gap:6px;font-size:13.5px}
+.chk input{accent-color:var(--green);width:17px;height:17px}
+.rule{font-size:12.5px;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap}
+.rule span::before{content:"";display:inline-block;width:10px;height:10px;margin-right:5px;vertical-align:-1px;background:var(--green)}
+.rule span.sh::before{background:var(--share)}
+/* 목록 */
+details.cat{background:var(--surface);border:1px solid var(--line)}
+details.cat>summary{list-style:none;cursor:pointer;padding:11px 14px;display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;font-family:var(--display);font-size:16px}
+details.cat>summary::-webkit-details-marker{display:none}
+.letter{width:28px;height:28px;background:var(--green);color:var(--on-accent);display:grid;place-items:center;font-family:var(--mono);font-size:15px}
+.cat-count{font-family:var(--mono);font-size:13px;color:var(--muted)}
+.item{border-top:1px solid var(--line);padding:10px 14px;display:grid;gap:8px}
+.row{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:center}
+.item.done{background:rgba(156,196,111,.05)}
+.item.done .name{color:var(--dim);text-decoration:line-through}
+.item input[type=checkbox]{width:22px;height:22px;accent-color:var(--green)}
+.item.shared{background:var(--share-soft)}
+.item.shared .name{color:var(--share)}
+.sharebadge{width:22px;height:22px;display:grid;place-items:center;font-size:12px;font-weight:900;background:var(--share);color:var(--on-accent)}
+.name{font-weight:700;font-size:14.5px}
+.note{font-size:12.5px;color:var(--muted);margin-top:2px}
+.tag{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border:1px solid var(--line2);color:var(--muted);margin-right:4px}
+.tag.eq{color:var(--share);border-color:rgba(143,176,207,.35)}
+.tag.price{color:var(--green-deep);border-color:var(--green-line);font-family:var(--mono);font-weight:400}
+.qty{display:grid;justify-items:end;gap:3px;font-size:12.5px;color:var(--muted)}
+.qty .goal b{font-family:var(--mono);font-size:15px;color:var(--ink);font-weight:400}
+.have{display:flex;align-items:center;gap:4px}
+.have input{width:62px;padding:4px 6px;text-align:right;font-family:var(--mono)}
+.short{font-weight:800;color:var(--warn)}
+.ok{font-weight:800;color:var(--ok)}
+.buy{margin-left:38px;background:var(--bg);border:1px dashed var(--line2);padding:10px;display:grid;gap:8px}
+.buy .grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:8px}
+.buy label{display:grid;gap:3px;font-size:12px;color:var(--muted)}
+.buy input{width:100%}
+.buy .calc{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;font-size:13px}
+.buy .calc b{color:var(--green-deep);font-size:15px;font-family:var(--mono);font-weight:400}
+a.link{color:var(--green-deep);font-weight:800;word-break:break-all}
+/* 예산 */
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+.tile{background:var(--surface);border:1px solid var(--line);border-top:3px solid var(--green);padding:14px;display:grid;gap:2px}
+.tile b{font-size:24px;font-weight:400;color:var(--green-deep);font-family:var(--mono)}
+.tile span{font-size:12.5px;color:var(--muted)}
+.panel{background:var(--surface);border:1px solid var(--line);overflow:hidden}
+.panel h3{padding:12px 14px;border-bottom:1px solid var(--line)}
+.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
+.tbl th,.tbl td{padding:9px 12px;border-top:1px solid var(--line);text-align:left;vertical-align:top}
+.tbl th{font-size:12px;color:var(--muted);font-weight:800;background:var(--surface2);border-top:0}
+.tbl td.r,.tbl th.r{text-align:right;font-family:var(--mono)}
+.tbl tfoot td{font-weight:900;background:var(--green-soft);color:var(--green-deep)}
+.scroll{overflow-x:auto}
+.routine .r{display:grid;grid-template-columns:28px 1fr;gap:10px;align-items:start;padding:12px 14px;border-top:1px solid var(--line)}
+.routine .r input{width:22px;height:22px;accent-color:var(--green)}
+.rhead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px}
+.when{font-size:12px;color:var(--dim);font-family:var(--mono)}
+footer{font-size:12px;color:var(--dim);text-align:center;padding:8px}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,a:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+@media (max-width:640px){.stages{grid-template-columns:repeat(3,minmax(0,1fr))}.buy .grid{grid-template-columns:1fr 1fr}.buy .grid label:first-child{grid-column:1/-1}}
+@media (max-width:480px){.stages{grid-template-columns:repeat(2,minmax(0,1fr))}.row{grid-template-columns:26px 1fr}.qty{grid-column:2;justify-items:start;grid-auto-flow:column;gap:10px;align-items:center}.buy{margin-left:0}.who span{display:none}}
+@media (prefers-reduced-motion:no-preference){.mini i{transition:width .3s}}
+</style>
+</head>
+<body>
+
+<!-- 로그인 화면 -->
+<section id="login" class="hidden">
+  <div class="login-card">
+    <svg class="mascot" viewBox="0 0 16 16" shape-rendering="crispEdges" role="img" aria-label="철모 쓴 곰 캐릭터 레디"><rect x="4" y="0" width="1" height="1" fill="#3a4234"/><rect x="5" y="0" width="1" height="1" fill="#3a4234"/><rect x="6" y="0" width="1" height="1" fill="#3a4234"/><rect x="7" y="0" width="1" height="1" fill="#3a4234"/><rect x="8" y="0" width="1" height="1" fill="#3a4234"/><rect x="9" y="0" width="1" height="1" fill="#3a4234"/><rect x="10" y="0" width="1" height="1" fill="#3a4234"/><rect x="11" y="0" width="1" height="1" fill="#3a4234"/><rect x="3" y="1" width="1" height="1" fill="#3a4234"/><rect x="4" y="1" width="1" height="1" fill="#5a6650"/><rect x="5" y="1" width="1" height="1" fill="#5a6650"/><rect x="6" y="1" width="1" height="1" fill="#5a6650"/><rect x="7" y="1" width="1" height="1" fill="#5a6650"/><rect x="8" y="1" width="1" height="1" fill="#5a6650"/><rect x="9" y="1" width="1" height="1" fill="#5a6650"/><rect x="10" y="1" width="1" height="1" fill="#5a6650"/><rect x="11" y="1" width="1" height="1" fill="#5a6650"/><rect x="12" y="1" width="1" height="1" fill="#3a4234"/><rect x="2" y="2" width="1" height="1" fill="#3a4234"/><rect x="3" y="2" width="1" height="1" fill="#5a6650"/><rect x="4" y="2" width="1" height="1" fill="#5a6650"/><rect x="5" y="2" width="1" height="1" fill="#5a6650"/><rect x="6" y="2" width="1" height="1" fill="#5a6650"/><rect x="7" y="2" width="1" height="1" fill="#5a6650"/><rect x="8" y="2" width="1" height="1" fill="#5a6650"/><rect x="9" y="2" width="1" height="1" fill="#5a6650"/><rect x="10" y="2" width="1" height="1" fill="#5a6650"/><rect x="11" y="2" width="1" height="1" fill="#5a6650"/><rect x="12" y="2" width="1" height="1" fill="#5a6650"/><rect x="13" y="2" width="1" height="1" fill="#3a4234"/><rect x="2" y="3" width="1" height="1" fill="#3a4234"/><rect x="3" y="3" width="1" height="1" fill="#e07a1f"/><rect x="4" y="3" width="1" height="1" fill="#e07a1f"/><rect x="5" y="3" width="1" height="1" fill="#e07a1f"/><rect x="6" y="3" width="1" height="1" fill="#e07a1f"/><rect x="7" y="3" width="1" height="1" fill="#e07a1f"/><rect x="8" y="3" width="1" height="1" fill="#e07a1f"/><rect x="9" y="3" width="1" height="1" fill="#e07a1f"/><rect x="10" y="3" width="1" height="1" fill="#e07a1f"/><rect x="11" y="3" width="1" height="1" fill="#e07a1f"/><rect x="12" y="3" width="1" height="1" fill="#e07a1f"/><rect x="13" y="3" width="1" height="1" fill="#3a4234"/><rect x="1" y="4" width="1" height="1" fill="#9b7650"/><rect x="2" y="4" width="1" height="1" fill="#3a4234"/><rect x="3" y="4" width="1" height="1" fill="#3a4234"/><rect x="4" y="4" width="1" height="1" fill="#3a4234"/><rect x="5" y="4" width="1" height="1" fill="#3a4234"/><rect x="6" y="4" width="1" height="1" fill="#3a4234"/><rect x="7" y="4" width="1" height="1" fill="#3a4234"/><rect x="8" y="4" width="1" height="1" fill="#3a4234"/><rect x="9" y="4" width="1" height="1" fill="#3a4234"/><rect x="10" y="4" width="1" height="1" fill="#3a4234"/><rect x="11" y="4" width="1" height="1" fill="#3a4234"/><rect x="12" y="4" width="1" height="1" fill="#3a4234"/><rect x="13" y="4" width="1" height="1" fill="#3a4234"/><rect x="14" y="4" width="1" height="1" fill="#9b7650"/><rect x="1" y="5" width="1" height="1" fill="#9b7650"/><rect x="2" y="5" width="1" height="1" fill="#9b7650"/><rect x="3" y="5" width="1" height="1" fill="#9b7650"/><rect x="4" y="5" width="1" height="1" fill="#9b7650"/><rect x="5" y="5" width="1" height="1" fill="#9b7650"/><rect x="6" y="5" width="1" height="1" fill="#9b7650"/><rect x="7" y="5" width="1" height="1" fill="#9b7650"/><rect x="8" y="5" width="1" height="1" fill="#9b7650"/><rect x="9" y="5" width="1" height="1" fill="#9b7650"/><rect x="10" y="5" width="1" height="1" fill="#9b7650"/><rect x="11" y="5" width="1" height="1" fill="#9b7650"/><rect x="12" y="5" width="1" height="1" fill="#9b7650"/><rect x="13" y="5" width="1" height="1" fill="#9b7650"/><rect x="14" y="5" width="1" height="1" fill="#9b7650"/><rect x="1" y="6" width="1" height="1" fill="#9b7650"/><rect x="2" y="6" width="1" height="1" fill="#9b7650"/><rect x="3" y="6" width="1" height="1" fill="#9b7650"/><rect x="4" y="6" width="1" height="1" fill="#16130e"/><rect x="5" y="6" width="1" height="1" fill="#9b7650"/><rect x="6" y="6" width="1" height="1" fill="#9b7650"/><rect x="7" y="6" width="1" height="1" fill="#9b7650"/><rect x="8" y="6" width="1" height="1" fill="#9b7650"/><rect x="9" y="6" width="1" height="1" fill="#9b7650"/><rect x="10" y="6" width="1" height="1" fill="#9b7650"/><rect x="11" y="6" width="1" height="1" fill="#16130e"/><rect x="12" y="6" width="1" height="1" fill="#9b7650"/><rect x="13" y="6" width="1" height="1" fill="#9b7650"/><rect x="14" y="6" width="1" height="1" fill="#9b7650"/><rect x="1" y="7" width="1" height="1" fill="#9b7650"/><rect x="2" y="7" width="1" height="1" fill="#9b7650"/><rect x="3" y="7" width="1" height="1" fill="#9b7650"/><rect x="4" y="7" width="1" height="1" fill="#9b7650"/><rect x="5" y="7" width="1" height="1" fill="#9b7650"/><rect x="6" y="7" width="1" height="1" fill="#9b7650"/><rect x="7" y="7" width="1" height="1" fill="#9b7650"/><rect x="8" y="7" width="1" height="1" fill="#9b7650"/><rect x="9" y="7" width="1" height="1" fill="#9b7650"/><rect x="10" y="7" width="1" height="1" fill="#9b7650"/><rect x="11" y="7" width="1" height="1" fill="#9b7650"/><rect x="12" y="7" width="1" height="1" fill="#9b7650"/><rect x="13" y="7" width="1" height="1" fill="#9b7650"/><rect x="14" y="7" width="1" height="1" fill="#9b7650"/><rect x="1" y="8" width="1" height="1" fill="#9b7650"/><rect x="2" y="8" width="1" height="1" fill="#9b7650"/><rect x="3" y="8" width="1" height="1" fill="#9b7650"/><rect x="4" y="8" width="1" height="1" fill="#9b7650"/><rect x="5" y="8" width="1" height="1" fill="#9b7650"/><rect x="6" y="8" width="1" height="1" fill="#d2b48c"/><rect x="7" y="8" width="1" height="1" fill="#d2b48c"/><rect x="8" y="8" width="1" height="1" fill="#d2b48c"/><rect x="9" y="8" width="1" height="1" fill="#d2b48c"/><rect x="10" y="8" width="1" height="1" fill="#9b7650"/><rect x="11" y="8" width="1" height="1" fill="#9b7650"/><rect x="12" y="8" width="1" height="1" fill="#9b7650"/><rect x="13" y="8" width="1" height="1" fill="#9b7650"/><rect x="14" y="8" width="1" height="1" fill="#9b7650"/><rect x="1" y="9" width="1" height="1" fill="#9b7650"/><rect x="2" y="9" width="1" height="1" fill="#9b7650"/><rect x="3" y="9" width="1" height="1" fill="#9b7650"/><rect x="4" y="9" width="1" height="1" fill="#9b7650"/><rect x="5" y="9" width="1" height="1" fill="#d2b48c"/><rect x="6" y="9" width="1" height="1" fill="#d2b48c"/><rect x="7" y="9" width="1" height="1" fill="#16130e"/><rect x="8" y="9" width="1" height="1" fill="#16130e"/><rect x="9" y="9" width="1" height="1" fill="#d2b48c"/><rect x="10" y="9" width="1" height="1" fill="#d2b48c"/><rect x="11" y="9" width="1" height="1" fill="#9b7650"/><rect x="12" y="9" width="1" height="1" fill="#9b7650"/><rect x="13" y="9" width="1" height="1" fill="#9b7650"/><rect x="14" y="9" width="1" height="1" fill="#9b7650"/><rect x="2" y="10" width="1" height="1" fill="#9b7650"/><rect x="3" y="10" width="1" height="1" fill="#9b7650"/><rect x="4" y="10" width="1" height="1" fill="#9b7650"/><rect x="5" y="10" width="1" height="1" fill="#d2b48c"/><rect x="6" y="10" width="1" height="1" fill="#d2b48c"/><rect x="7" y="10" width="1" height="1" fill="#d2b48c"/><rect x="8" y="10" width="1" height="1" fill="#d2b48c"/><rect x="9" y="10" width="1" height="1" fill="#d2b48c"/><rect x="10" y="10" width="1" height="1" fill="#d2b48c"/><rect x="11" y="10" width="1" height="1" fill="#9b7650"/><rect x="12" y="10" width="1" height="1" fill="#9b7650"/><rect x="13" y="10" width="1" height="1" fill="#9b7650"/><rect x="3" y="11" width="1" height="1" fill="#9b7650"/><rect x="4" y="11" width="1" height="1" fill="#9b7650"/><rect x="5" y="11" width="1" height="1" fill="#9b7650"/><rect x="6" y="11" width="1" height="1" fill="#9b7650"/><rect x="7" y="11" width="1" height="1" fill="#9b7650"/><rect x="8" y="11" width="1" height="1" fill="#9b7650"/><rect x="9" y="11" width="1" height="1" fill="#9b7650"/><rect x="10" y="11" width="1" height="1" fill="#9b7650"/><rect x="11" y="11" width="1" height="1" fill="#9b7650"/><rect x="12" y="11" width="1" height="1" fill="#9b7650"/><rect x="2" y="12" width="1" height="1" fill="#5a6650"/><rect x="3" y="12" width="1" height="1" fill="#5a6650"/><rect x="4" y="12" width="1" height="1" fill="#5a6650"/><rect x="5" y="12" width="1" height="1" fill="#5a6650"/><rect x="6" y="12" width="1" height="1" fill="#5a6650"/><rect x="7" y="12" width="1" height="1" fill="#5a6650"/><rect x="8" y="12" width="1" height="1" fill="#5a6650"/><rect x="9" y="12" width="1" height="1" fill="#5a6650"/><rect x="10" y="12" width="1" height="1" fill="#5a6650"/><rect x="11" y="12" width="1" height="1" fill="#5a6650"/><rect x="12" y="12" width="1" height="1" fill="#5a6650"/><rect x="13" y="12" width="1" height="1" fill="#5a6650"/><rect x="1" y="13" width="1" height="1" fill="#5a6650"/><rect x="2" y="13" width="1" height="1" fill="#5a6650"/><rect x="3" y="13" width="1" height="1" fill="#3a4234"/><rect x="4" y="13" width="1" height="1" fill="#5a6650"/><rect x="5" y="13" width="1" height="1" fill="#5a6650"/><rect x="6" y="13" width="1" height="1" fill="#5a6650"/><rect x="7" y="13" width="1" height="1" fill="#e07a1f"/><rect x="8" y="13" width="1" height="1" fill="#e07a1f"/><rect x="9" y="13" width="1" height="1" fill="#5a6650"/><rect x="10" y="13" width="1" height="1" fill="#5a6650"/><rect x="11" y="13" width="1" height="1" fill="#5a6650"/><rect x="12" y="13" width="1" height="1" fill="#5a6650"/><rect x="13" y="13" width="1" height="1" fill="#3a4234"/><rect x="14" y="13" width="1" height="1" fill="#5a6650"/><rect x="1" y="14" width="1" height="1" fill="#5a6650"/><rect x="2" y="14" width="1" height="1" fill="#5a6650"/><rect x="3" y="14" width="1" height="1" fill="#5a6650"/><rect x="4" y="14" width="1" height="1" fill="#5a6650"/><rect x="5" y="14" width="1" height="1" fill="#5a6650"/><rect x="6" y="14" width="1" height="1" fill="#5a6650"/><rect x="7" y="14" width="1" height="1" fill="#3a4234"/><rect x="8" y="14" width="1" height="1" fill="#5a6650"/><rect x="9" y="14" width="1" height="1" fill="#5a6650"/><rect x="10" y="14" width="1" height="1" fill="#5a6650"/><rect x="11" y="14" width="1" height="1" fill="#5a6650"/><rect x="12" y="14" width="1" height="1" fill="#5a6650"/><rect x="13" y="14" width="1" height="1" fill="#5a6650"/><rect x="1" y="15" width="1" height="1" fill="#5a6650"/><rect x="2" y="15" width="1" height="1" fill="#5a6650"/><rect x="3" y="15" width="1" height="1" fill="#5a6650"/><rect x="4" y="15" width="1" height="1" fill="#5a6650"/><rect x="5" y="15" width="1" height="1" fill="#5a6650"/><rect x="6" y="15" width="1" height="1" fill="#5a6650"/><rect x="7" y="15" width="1" height="1" fill="#5a6650"/><rect x="8" y="15" width="1" height="1" fill="#5a6650"/><rect x="9" y="15" width="1" height="1" fill="#5a6650"/><rect x="10" y="15" width="1" height="1" fill="#5a6650"/><rect x="11" y="15" width="1" height="1" fill="#5a6650"/><rect x="12" y="15" width="1" height="1" fill="#5a6650"/><rect x="13" y="15" width="1" height="1" fill="#5a6650"/><rect x="14" y="15" width="1" height="1" fill="#5a6650"/></svg>
+    <div class="tagline">TAC-READY // FAMILY 4P</div>
+    <h1 style="font-size:28px">우리집 비상 비축</h1>
+    <p class="muted" style="margin:0">작전명 우리집. 즉시 대피부터 3개월 장기 고립까지, 상황 5단계로 가족 비상 물품을 준비하세요.</p>
+    <ul>
+      <li>단계별 물품표와 보유 수량 체크</li>
+      <li>품목마다 구매 링크·가격을 저장하고 예산 자동 계산</li>
+      <li>매월 순환 점검 기록</li>
+    </ul>
+    <button type="button" class="gbtn" id="btnLogin">
+      <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.6c0-1.6-.1-3.1-.4-4.6H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.7c4.3-4 6.9-9.9 6.9-17z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.5-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.4-5.7c-2.1 1.4-4.8 2.3-8.5 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>
+      Google 계정으로 시작하기
+    </button>
+    <div class="err" id="loginErr" role="alert"></div>
+    <p class="muted" style="margin:0;font-size:12px">입력한 기록은 본인 계정에만 저장되며 다른 사람은 볼 수 없습니다.</p>
+  </div>
+</section>
+
+<!-- 앱 화면 -->
+<div id="app" class="wrap hidden">
+  <div class="topbar">
+    <div class="brand"><svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" fill="#e07a1f"/><path d="M9 29 20 11l11 18z" fill="none" stroke="#16130e" stroke-width="3.2" stroke-linejoin="miter"/><rect x="18.3" y="20" width="3.4" height="3.4" fill="#16130e"/></svg><div><h1>우리집 비상 비축</h1><div class="sub">TAC-READY // 4P</div></div></div>
+    <div class="who"><img id="avatar" alt="" referrerpolicy="no-referrer"><span id="uname"></span><button type="button" class="btn small" id="btnLogout">로그아웃</button></div>
+  </div>
+  <div class="status" id="status" role="status">불러오는 중…</div>
+
+  <div class="tabs" role="tablist">
+    <button type="button" role="tab" data-tab="items" aria-selected="true">물품표</button>
+    <button type="button" role="tab" data-tab="budget" aria-selected="false">예산</button>
+    <button type="button" role="tab" data-tab="routine" aria-selected="false">월간 점검</button>
+  </div>
+
+  <section id="pane-items" style="display:grid;gap:12px">
+    <div class="stages" id="stages" role="group" aria-label="상황 단계"></div>
+    <div class="hero" id="hero"></div>
+    <div class="controls">
+      <label class="muted" for="fShow" style="font-size:13px">보기</label>
+      <select id="fShow"><option value="all">전체</option><option value="todo">남은 것만</option><option value="noprice">가격 미입력</option></select>
+      <label class="chk"><input type="checkbox" id="fShared" checked> 공용 품목 표시</label>
+    </div>
+    <div class="rule"><span>이 단계에서 따로 준비</span><span class="sh">앞 단계 장비를 함께 씀 (따로 살 필요 없음)</span></div>
+    <div id="cats" style="display:grid;gap:10px"></div>
+  </section>
+
+  <section id="pane-budget" class="hidden" style="display:grid;gap:12px">
+    <div class="tiles" id="bTiles"></div>
+    <div class="panel"><h3>단계별 예산</h3><div class="scroll"><table class="tbl" id="bStages"></table></div></div>
+    <div class="panel">
+      <h3 style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">구매 목록
+        <span style="display:flex;gap:6px;align-items:center;font-weight:400">
+          <select id="bStage" aria-label="단계 선택"><option value="">전체 단계</option></select>
+          <select id="bMode" aria-label="계산 기준"><option value="need">필요 수량 기준</option><option value="short">부족분 기준</option></select>
+          <button type="button" class="btn small" id="btnCsv">CSV 저장</button>
+        </span></h3>
+      <div class="scroll"><table class="tbl" id="bList"></table></div>
+    </div>
+    <p class="muted" style="font-size:12.5px;margin:0">예상 금액 = 올림(필요 수량 ÷ 구매 단위 수량) × 구매 가격. 공용 품목은 앞 단계에서 이미 계산되므로 빠집니다.</p>
+  </section>
+
+  <section id="pane-routine" class="hidden">
+    <div class="panel routine">
+      <div class="rhead"><b>매월 첫 토요일 점검</b><label class="muted" style="font-size:13px">점검 월 <select id="month"></select></label></div>
+      <div id="routine"></div>
+    </div>
+  </section>
+
+  <footer>이 앱은 일반적인 대비 참고용입니다. 실제 상황에서는 정부·지자체 안내(국민재난안전포털, 재난 방송)를 따르세요.</footer>
+</div>
+
+<script>
+const CATS = {A:'물',B:'식료품',C:'취사·연료',D:'위생·생활',E:'의약·건강',F:'전력·조명·통신',G:'보온·의류·침구',H:'안전·보호',I:'이동·대피',J:'문서·현금·정보'};
+// 품목: [대분류, 품목, 단위, 수량, 메모, 공용 출처 단계('' = 이 단계에서 따로 준비), 장비 여부(1)]
+const STAGES = [
+{id:'S1', name:'즉시 대피', time:'1~2분', move:'도보', dur:'수 시간', where:'현관 고리 · 외출 가방',
+ principle:'신발 신고 바로 나갈 수 있게 1인 1파우치(크로스백)로 몸에 지닙니다. 공습 경보 시 가까운 지하 대피소로 이동합니다.',
+ acts:['신발·외투 착용, 파우치 메기','가스 밸브 잠그고 전기 차단기 내리기(시간 있을 때)','엘리베이터 대신 계단, 가까운 지하 대피소로','이동 후 라디오·안내 방송 듣기'],
+ items:[
+ ['I','대피 파우치 (크로스백)','개',4,'1인 1개, 현관 고리에','',1],
+ ['A','생수 500ml','병',4,'1인 1병','',0],
+ ['B','사탕·에너지바','개',8,'1인 2개','',0],
+ ['E','KF94 마스크','매',8,'1인 2매','',0],
+ ['E','본인 처방약 1~3일분','인분',0,'해당 가족만, 인원 수 입력','',0],
+ ['D','휴대용 티슈','개',4,'','',0],
+ ['F','소형 손전등','개',4,'','',1],
+ ['F','소형 보조배터리 + 케이블','개',4,'매월 충전','',1],
+ ['H','호루라기','개',4,'구조 요청용','',1],
+ ['J','신분증 사본·소액 현금','세트',4,'','',0],
+ ['J','가족 연락·집결지 카드','장',4,'가까운 대피소 위치 기재','',1],
+ ['J','아이 명찰 (이름·보호자 연락처)','개',2,'','',1],
+ ['G','신발·외투 현관 상시 배치','원칙',1,'매일 같은 자리에','',1]
+ ]},
+{id:'S2', name:'배낭 대피', time:'10분', move:'도보', dur:'3일 (72시간)', where:'현관 근처',
+ principle:'S1 파우치 + 1인 1배낭. 가방은 20~35L, 무게는 체중의 10~20% 이내. 아이는 자기 옷·간식만, 공용 장비는 어른이 나눠 듭니다.',
+ acts:['S1 파우치 메기','배낭 4개 들기 (아이 배낭은 가볍게)','휴대폰·보조배터리 챙기기','집결지·대피소 확인 후 출발'],
+ items:[
+ ['I','생존배낭 20~35L','개',4,'분기마다 점검','',1],
+ ['A','생수 500ml','병',16,'1인 2L (S1 물과 별도)','',0],
+ ['A','휴대용 정수필터','개',1,'공용, 어른 배낭','',1],
+ ['B','건빵·에너지바','개',24,'1인 하루 2개','',0],
+ ['B','짜먹는 죽·파우치 죽','개',12,'조리 없이 먹기','',0],
+ ['B','초콜릿·사탕','봉',4,'','',0],
+ ['B','발열 도시락','개',4,'불 없이 따뜻한 한 끼','',0],
+ ['C','라이터·성냥','개',2,'','',1],
+ ['D','휴지·물티슈 (소형)','세트',4,'','',0],
+ ['D','칫솔·치약 (여행용)','세트',4,'','',0],
+ ['D','간이변기 봉투','개',12,'','',0],
+ ['D','지퍼백·비닐봉투','세트',1,'','',0],
+ ['D','생리용품','팩',1,'해당 시','',0],
+ ['E','응급처치 세트 (붕대·거즈·소독약)','세트',1,'공용','',1],
+ ['E','상비약 (해열진통·지사제·소화제)','세트',1,'배낭 전용 (집 상비약과 별도)','',0],
+ ['E','처방약 7일분 + 처방 기록 메모','인분',0,'해당 가족만','',0],
+ ['E','KF94 마스크','매',12,'1인 3매 (S1과 별도)','',0],
+ ['F','헤드램프','개',4,'AAA 건전지형','',1],
+ ['F','재난 라디오 (수동 충전)','대',1,'공용','',1],
+ ['F','보조배터리 (대용량)','개',2,'매월 충전','',1],
+ ['F','AAA 예비 건전지','개',12,'','',0],
+ ['G','속옷·양말 여벌','세트',4,'분기마다 계절·사이즈 교체','',0],
+ ['G','장갑·모자','세트',4,'','',1],
+ ['G','우의 (모자 달린)','개',4,'화생방 겸용','',1],
+ ['G','은박 비상담요','장',4,'','',0],
+ ['G','핫팩','개',12,'겨울','',0],
+ ['H','방독면 (대피용 마스크)','개',4,'정화통 유효기간 확인','',1],
+ ['H','멀티툴','개',1,'','',1],
+ ['H','밧줄 10m','개',1,'','',1],
+ ['H','목장갑','켤레',4,'','',0],
+ ['J','서류 사본 방수팩','세트',1,'신분증·가족관계·통장·계약서','',1],
+ ['J','소액권 현금','원',0,'금액은 가족이 정해 입력','',0],
+ ['J','가족 사진','장',4,'실종 대비','',1],
+ ['H','호루라기','개',0,'S1 파우치 것 사용','S1',1],
+ ['J','가족 연락·집결지 카드','장',0,'S1 파우치 것 사용','S1',1]
+ ]},
+{id:'S3', name:'차량 대피', time:'30분', move:'차량', dur:'7일', where:'현관·창고 (박스 2개)',
+ principle:'S2 배낭 4개 + 미리 포장한 차량 박스 2개를 30분 안에 싣습니다. 캠핑 장비와 겸용이라 캠핑 갈 때 박스째 가져가면 점검이 됩니다.',
+ acts:['배낭 4개, 박스 ①②를 차에 싣기','연료 확인 (반탱크 이상)','종이 지도로 경로·대체 경로 확인','출발 전 가족 연락망에 목적지 공유'],
+ items:[
+ ['I','차량 적재 박스 (폴딩박스)','개',2,'① 생활·식량 ② 취침·장비','',1],
+ ['I','연료 반탱크 이상 유지','원칙',1,'게이지 절반 아래면 바로 주유','',1],
+ ['I','점프스타터','개',1,'3개월마다 충전','',1],
+ ['I','견인로프·안전삼각대','세트',1,'','',1],
+ ['I','종이 지도 (거주 지역·이동 경로)','장',1,'','',1],
+ ['A','생수 2L×6','팩',5,'7일 × 8L','',0],
+ ['A','접이식 물통 10L','개',2,'급수 받기용','',1],
+ ['B','즉석밥','개',28,'하루 4개','',0],
+ ['B','레토르트 국·탕','봉',14,'','',0],
+ ['B','레토르트 죽','봉',14,'아침용','',0],
+ ['B','통조림 (참치·고등어 등)','캔',28,'','',0],
+ ['B','발열 도시락','개',8,'','',0],
+ ['B','김·김치 통조림','세트',1,'','',0],
+ ['C','휴대용 버너','대',1,'캠핑 겸용','',1],
+ ['C','부탄가스','캔',8,'','',0],
+ ['C','코펠·식기 세트','세트',1,'캠핑 겸용','',1],
+ ['C','일회용 접시·컵·수저','세트',1,'4인 7일분','',0],
+ ['D','휴대용 변기','개',1,'차박·캠핑 겸용','',1],
+ ['D','변기 응고제','회분',140,'1인 하루 5회','',0],
+ ['D','쓰레기봉투','장',20,'','',0],
+ ['D','물티슈 (대용량)','팩',4,'','',0],
+ ['D','화장지','롤',6,'','',0],
+ ['F','파워뱅크 (리버3 플러스급)','대',1,'매월 충전','',1],
+ ['F','차량용 충전기·케이블','개',2,'','',1],
+ ['G','침낭','개',4,'캠핑 겸용','',1],
+ ['G','매트·방수포','세트',1,'','',1],
+ ['G','텐트 (캠핑 겸용)','동',1,'선택','',1],
+ ['I','생존배낭 4개','개',0,'S2 배낭을 그대로 싣기','S2',1],
+ ['A','휴대용 정수필터','개',0,'S2 배낭 것 사용','S2',1],
+ ['F','재난 라디오','대',0,'S2 배낭 것 사용','S2',1],
+ ['F','헤드램프','개',0,'S2 배낭 것 사용','S2',1],
+ ['E','응급처치 세트','세트',0,'S2 배낭 것 사용','S2',1],
+ ['H','방독면','개',0,'S2 배낭 것 사용','S2',1]
+ ]},
+{id:'S4', name:'자택 대피', time:'집에 머묾', move:'-', dur:'2주', where:'주방·창고·욕실',
+ principle:'정전·단수·외출 자제 상황. 냉장 → 냉동 → 상온 비축분 순서로 먹어서 비축분을 아낍니다. 배낭·차량 박스의 소모품은 건드리지 않습니다.',
+ acts:['욕조·식수통에 물 받기 (단수 전에)','휴대폰·파워뱅크·보조배터리 완전 충전','라디오로 정부 안내 확인','차량 연료 확인','냉장고 문 여는 횟수 줄이기'],
+ items:[
+ ['A','생수 2L×6','팩',10,'14일 × 8L','',0],
+ ['A','식수통 20L (코크 달린)','개',4,'생활용수','',1],
+ ['A','욕조 저수용 비닐·마개','세트',1,'','',1],
+ ['B','즉석밥','개',56,'하루 4개','',0],
+ ['B','쌀','kg',10,'하루 1끼 밥 짓기','',0],
+ ['B','레토르트 죽','봉',28,'','',0],
+ ['B','레토르트 국·탕','봉',28,'중탕 물 재사용','',0],
+ ['B','통조림','캔',28,'','',0],
+ ['B','레토르트 카레·짜장','봉',7,'','',0],
+ ['B','김 (대용량)','봉',4,'','',0],
+ ['B','건빵·에너지바·견과','개',14,'간식','',0],
+ ['B','멸균우유 200ml','팩',48,'2박스, 매주 순환','',0],
+ ['B','멀티비타민·비타민C','세트',1,'4인 30일분','',0],
+ ['C','부탄가스','캔',14,'','',0],
+ ['C','일산화탄소 경보기','개',1,'실내 버너 사용 시 필수','',1],
+ ['C','랩·호일·지퍼백','세트',1,'설거지 물 절약','',0],
+ ['D','화장지','롤',12,'','',0],
+ ['D','물티슈 (대용량)','팩',6,'','',0],
+ ['D','변기 응고제','회분',280,'','',0],
+ ['D','쓰레기봉투','장',40,'','',0],
+ ['D','손소독제','개',2,'','',0],
+ ['D','목욕 티슈·드라이 샴푸','개',2,'','',0],
+ ['E','가정 상비약 세트','세트',1,'배낭 상비약과 별도','',0],
+ ['E','처방약 14일분','인분',0,'해당 가족만','',0],
+ ['E','경구수분보충염 (ORS)','회분',10,'','',0],
+ ['E','체온계','개',1,'','',1],
+ ['E','KF94 마스크','매',28,'','',0],
+ ['F','AA·AAA 건전지','개',32,'각 16개','',0],
+ ['F','랜턴','개',2,'','',1],
+ ['F','양초','개',10,'화재 주의','',0],
+ ['G','담요','장',4,'','',1],
+ ['G','핫팩','개',28,'겨울','',0],
+ ['H','소화기','개',1,'매월 압력 확인','',1],
+ ['H','알루미늄테이프','롤',2,'창틀·문틀 밀폐','',0],
+ ['H','고무장갑·고무장화','세트',4,'','',1],
+ ['H','합성세제 (제염용, 락스 제외)','개',1,'','',0],
+ ['C','휴대용 버너','대',0,'S3 차량 박스 것 사용','S3',1],
+ ['C','코펠·식기','세트',0,'S3 차량 박스 것 사용','S3',1],
+ ['D','휴대용 변기','개',0,'S3 차량 박스 것 사용','S3',1],
+ ['F','파워뱅크','대',0,'S3 차량 박스 것 사용','S3',1],
+ ['G','침낭','개',0,'S3 차량 박스 것 사용 (난방 끊김 시)','S3',1],
+ ['F','재난 라디오·헤드램프','세트',0,'S2 배낭 것 사용','S2',1],
+ ['A','휴대용 정수필터','개',0,'S2 배낭 것 사용','S2',1],
+ ['H','방독면·멀티툴','세트',0,'S2 배낭 것 사용','S2',1]
+ ]},
+{id:'S5', name:'장기 고립', time:'집에 머묾', move:'-', dur:'3개월', where:'창고·주방 (A·B·C 상자)',
+ principle:'S4 2주분에 더해 추가 76일분을 준비해 총 90일을 채웁니다. 매월 첫 토요일, 가장 오래된 상자부터 먹고 같은 양을 다시 삽니다.',
+ acts:['정부 배급·급수 안내 확인 (라디오)','식단을 비축 식단으로 전환, 하루 소비량 기록','물 사용 하루 8L 이내로 관리','가족 역할 분담 (물·식사·위생·정보)'],
+ items:[
+ ['A','생수 2L×6','팩',50,'S4 10팩과 합쳐 60팩(720L)','',0],
+ ['A','정수 알약','통',2,'','',0],
+ ['A','정수필터 예비 1개','개',1,'고장 대비','',1],
+ ['B','즉석밥','개',152,'하루 2개','',0],
+ ['B','쌀·잡곡','kg',60,'하루 2끼 밥 짓기, 잡곡으로 비타민B1','',0],
+ ['B','누룽지','kg',5,'','',0],
+ ['B','오트밀','kg',3,'','',0],
+ ['B','레토르트 죽','봉',48,'','',0],
+ ['B','레토르트 국·탕','봉',76,'','',0],
+ ['B','통조림 (참치·고등어 등)','캔',152,'약 7년, 대용량 묶음','',0],
+ ['B','콩 통조림','캔',30,'','',0],
+ ['B','레토르트 카레·짜장','봉',30,'','',0],
+ ['B','라면·건면','개',40,'물 소모 커서 소량','',0],
+ ['B','김 (대용량)','봉',15,'','',0],
+ ['B','김치·장아찌 통조림','캔',6,'','',0],
+ ['B','땅콩버터','통',4,'','',0],
+ ['B','육포','봉',12,'','',0],
+ ['B','견과류·초콜릿','봉',12,'','',0],
+ ['B','멀티비타민·비타민C','세트',2,'4인 30일분 × 2','',0],
+ ['B','전지분유','kg',2,'칼슘·단백질','',0],
+ ['B','건미역·건나물','봉',3,'','',0],
+ ['B','소금 · 설탕·꿀','kg',6,'각 3kg','',0],
+ ['B','식용유','L',5,'','',0],
+ ['B','장류 (고추장·된장·간장)','세트',3,'','',0],
+ ['B','분유·이유식·환자식','일분',0,'해당 가족만 (76일분)','',0],
+ ['C','부탄가스','캔',50,'','',0],
+ ['C','예비 버너','대',1,'고장 대비','',1],
+ ['C','일회용 접시·컵·수저','세트',2,'4인 30일분 × 2','',0],
+ ['C','성냥·라이터','갑',10,'','',0],
+ ['D','화장지','롤',48,'','',0],
+ ['D','물티슈 (대용량)','팩',24,'','',0],
+ ['D','변기 응고제','회분',300,'단수 장기화 시 추가','',0],
+ ['D','쓰레기봉투','장',100,'','',0],
+ ['D','비누·치약','개',18,'비누 12, 치약 6','',0],
+ ['D','칫솔','개',4,'','',0],
+ ['D','세탁비누·락스','개',4,'락스는 소독용','',0],
+ ['D','생리용품','팩',6,'해당 시','',0],
+ ['D','기저귀','팩',0,'해당 시','',0],
+ ['E','상비약 보충 세트','세트',1,'','',0],
+ ['E','처방약 76일분','인분',0,'담당 의사와 상의','',0],
+ ['E','붕대·거즈 보충','세트',1,'','',0],
+ ['E','KF94 마스크','매',80,'','',0],
+ ['E','경구수분보충염 (ORS)','회분',10,'','',0],
+ ['E','여분 안경·렌즈','개',1,'안경 쓰는 가족','',1],
+ ['F','AA·AAA 건전지','개',64,'각 32개','',0],
+ ['F','양초','개',20,'','',0],
+ ['F','태양광 패널 (파워뱅크용)','개',1,'장기 정전 충전','',1],
+ ['G','내의·양말 (계절용)','세트',1,'4인분','',1],
+ ['G','핫팩','개',60,'겨울','',0],
+ ['H','공구 세트','세트',1,'','',1],
+ ['H','덕트테이프','롤',2,'','',0],
+ ['H','목장갑','켤레',20,'','',0],
+ ['J','필기도구·메모장','세트',1,'소비 기록용','',1],
+ ['J','여분 열쇠 (집·차)','세트',1,'','',1],
+ ['J','보드게임·책 (아이용)','개',2,'장기 고립 스트레스 완화','',1],
+ ['C','버너·코펠·일산화탄소 경보기','세트',0,'S3·S4 것 사용','S4',1],
+ ['A','식수통·욕조 저수','세트',0,'S4 것 사용','S4',1],
+ ['F','파워뱅크·랜턴·라디오','세트',0,'S2~S4 것 사용','S4',1],
+ ['H','소화기·방독면','세트',0,'S2·S4 것 사용','S4',1],
+ ['G','침낭·담요','세트',0,'S3·S4 것 사용','S4',1]
+ ]}
+];
+STAGES.forEach(s => s.items = s.items.map((r,i) => ({id:s.id+'-'+String(i+1).padStart(2,'0'), cat:r[0], name:r[1], unit:r[2], q:r[3], note:r[4], from:r[5], eq:!!r[6]})));
+const STAGE_NAME = Object.fromEntries(STAGES.map(s=>[s.id,s.name]));
+
+const ROUTINE = [
+ ['food','식량 순환','S4·S5 가장 오래된 상자부터 식단에 넣고 같은 양 재구매','매월'],
+ ['water','생수 순환','오래된 팩 20개를 일상 음용하고 20팩 재구매','매월'],
+ ['milk','멸균우유 순환','매주 먹은 만큼 채워 2박스 유지','매주'],
+ ['bag','S1 파우치·S2 배낭','물·간식 기한, 아이 옷 사이즈·계절 교체','분기 (3·6·9·12월)'],
+ ['car','S3 차량 박스·연료','박스 식품 기한, 연료 반탱크, 점프스타터 충전','매월'],
+ ['med','약품 유통기한','파우치·배낭·가정 상비약, 처방약, ORS','매월'],
+ ['power','충전','파워뱅크·보조배터리, 랜턴·라디오 작동','매월'],
+ ['gas','부탄가스·소화기','캔 녹·찌그러짐, 소화기 압력 게이지','매월'],
+ ['co','일산화탄소 경보기','테스트 버튼으로 작동 확인','매월']
+];
+</script>
+<script type="module">
+// Firebase 웹 설정 (공개되어도 되는 값입니다. 데이터 보호는 Firestore 보안 규칙이 담당)
+const firebaseConfig = {
+  apiKey: "AIzaSyDEvXHENh7XAM7Frzqt6STzceKS2AKKMvs",
+  authDomain: "emergency-stock.firebaseapp.com",
+  projectId: "emergency-stock",
+  storageBucket: "emergency-stock.firebasestorage.app",
+  messagingSenderId: "589609723374",
+  appId: "1:589609723374:web:c477172130ecd21e925aff"
+};
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { initializeFirestore, persistentLocalCache, doc, onSnapshot, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const fb = initializeApp(firebaseConfig);
+const auth = getAuth(fb);
+const db = initializeFirestore(fb, { localCache: persistentLocalCache() });
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const won = n => Math.round(n).toLocaleString('ko-KR') + '원';
+const ym = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+const safeUrl = u => { try { const x = new URL(u); return (x.protocol === 'https:' || x.protocol === 'http:') ? x.href : ''; } catch(e){ return ''; } };
+const host = u => { try { return new URL(u).hostname.replace(/^www\.|^m\./,''); } catch(e){ return ''; } };
+
+STAGES.forEach(s => s.items = s.items.map((r,i) => Array.isArray(r) ? ({id:s.id+'-'+String(i+1).padStart(2,'0'), cat:r[0], name:r[1], unit:r[2], q:r[3], note:r[4], from:r[5], eq:!!r[6]}) : r));
+const ICONS = {"S1": "<path d=\"M7 18v-5a5 5 0 0 1 10 0v5\"/><path d=\"M5 18h14v3H5z\"/><path d=\"M12 3v2M4.2 6.2l1.4 1.4M19.8 6.2l-1.4 1.4M2 12h2M20 12h2\"/>", "S2": "<path d=\"M8 6V4h8v2\"/><rect x=\"5\" y=\"6\" width=\"14\" height=\"15\" rx=\"2\"/><path d=\"M9 21v-6h6v6M9 11h6\"/>", "S3": "<path d=\"M2 16V7h11v9\"/><path d=\"M13 10h4l4 4v2h-8\"/><circle cx=\"6.5\" cy=\"17.5\" r=\"2\"/><circle cx=\"17.5\" cy=\"17.5\" r=\"2\"/>", "S4": "<path d=\"M3 20h18\"/><path d=\"M5 20v-8l7-6 7 6v8\"/><path d=\"M10 20v-5h4v5\"/><path d=\"M2 12l10-8 10 8\"/>", "S5": "<rect x=\"3\" y=\"7\" width=\"18\" height=\"13\"/><path d=\"M3 11h18M12 7v13M7 4h10l4 3H3z\"/>"};
+const ALL = STAGES.flatMap(s => s.items.map(it => ({...it, stage:s.id})));
+const BYID = Object.fromEntries(ALL.map(it => [it.id, it]));
+
+let uid = null, ref = null, unsub = null;
+let state = {have:{}, done:{}, routine:{}, buy:{}};
+let ui = {stage:'S1', tab:'items', openBuy:new Set()};
+let saveTimer = null, saving = false, pending = false, dirty = false;
+
+const own = s => s.items.filter(it => !it.from);
+const isDone = it => { if (state.done[it.id]) return true; const h = Number(state.have[it.id]); return it.q > 0 && h >= it.q; };
+const cur = () => STAGES.find(s => s.id===ui.stage) || STAGES[0];
+const need = it => it.q > 0 ? it.q : (Number(state.buy[it.id]?.qty) || 0); // '직접 입력' 품목은 구매정보의 필요수량 사용
+function cost(it, mode){
+  const b = state.buy[it.id]; if (!b || !(Number(b.price) > 0)) return null;
+  const per = Math.max(1, Number(b.pack) || 1);
+  let n = need(it);
+  if (mode === 'short') n = Math.max(0, n - (Number(state.have[it.id]) || 0));
+  return Math.ceil(n / per) * Number(b.price);
+}
+function setStatus(t){ $('#status').textContent = t; }
+
+/* ---------- 렌더링 ---------- */
+function renderStages(){
+  $('#stages').innerHTML = STAGES.map(s => {
+    const o = own(s), d = o.filter(isDone).length, p = o.length ? Math.round(d/o.length*100) : 0;
+    return `<button type="button" class="st" data-s="${s.id}" aria-pressed="${s.id===ui.stage}"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="square" aria-hidden="true">${ICONS[s.id]}</svg><span class="code">${s.id} // ${["즉시","72H","7D","14D","90D"][STAGES.indexOf(s)]}</span><span class="nm">${s.name}</span><span class="sm">${s.time} · ${s.dur}</span><span class="mini"><i style="width:${p}%"></i></span><span class="pc num">${d}/${o.length} · ${p}%</span></button>`;
+  }).join('');
+}
+function renderHero(){
+  const s = cur();
+  const total = own(s).reduce((a,it)=>a+(cost(it,'need')||0),0);
+  $('#hero').innerHTML = `<h2><span class="code">${s.id}</span>${s.name}</h2>
+    <div class="facts"><span class="fact"><b>출발</b>${s.time}</span><span class="fact"><b>이동</b>${s.move}</span><span class="fact"><b>기간</b>${s.dur}</span><span class="fact"><b>보관</b>${s.where}</span>${total?`<span class="fact"><b>예산</b>${won(total)}</span>`:''}</div>
+    <p style="margin:0;font-size:14px;color:var(--muted)">${s.principle}</p>
+    <div class="actions"><b>${s.id==='S4'||s.id==='S5'?'상황 시작 직후 할 일':'출발 순서'}</b><ol>${s.acts.map(a=>`<li>${a}</li>`).join('')}</ol></div>`;
+}
+function buyBox(it){
+  const b = state.buy[it.id] || {}, url = safeUrl(b.url), c = cost(it,'need'), direct = it.q === 0;
+  return `<div class="buy" data-buy="${it.id}">
+    <div class="grid">
+      <label>구매 링크 (복사해서 붙여넣기)<input type="url" inputmode="url" placeholder="https://" data-f="url" value="${esc(b.url)}"></label>
+      <label>구매 가격 (원)<input type="number" min="0" inputmode="numeric" placeholder="예: 32740" data-f="price" value="${esc(b.price)}"></label>
+      <label>구매 단위 수량<input type="number" min="1" inputmode="numeric" placeholder="예: 28" data-f="pack" value="${esc(b.pack)}"></label>
+      <label>${direct?'필요 수량 (직접)':'메모'}${direct?`<input type="number" min="0" inputmode="numeric" data-f="qty" value="${esc(b.qty)}">`:`<input type="text" maxlength="60" placeholder="예: 쿠팡 로켓" data-f="memo" value="${esc(b.memo)}">`}</label>
+    </div>
+    <div class="calc"><span>${url?`<a class="link" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(host(url))}에서 보기 ↗</a>`:'<span class="muted">링크를 붙여넣으면 바로 열 수 있어요</span>'}</span>
+      <span>${c===null?'<span class="muted">가격을 입력하면 예상 금액이 계산됩니다</span>':`예상 금액 <b class="num">${won(c)}</b> <span class="muted">(${Math.ceil(need(it)/Math.max(1,Number(b.pack)||1))}개 구매)</span>`}</span></div>
+  </div>`;
+}
+function renderItems(){
+  const s = cur(), show = $('#fShow').value, showShared = $('#fShared').checked;
+  const prevOpen = new Set([...document.querySelectorAll('details.cat[open]')].map(d => d.dataset.k));
+  let html = '';
+  Object.keys(CATS).forEach(c => {
+    const all = s.items.filter(it => it.cat===c);
+    const list = all.filter(it => (showShared || !it.from) && (show!=='todo' || (!it.from && !isDone(it))) && (show!=='noprice' || (!it.from && cost(it,'need')===null)));
+    if (!list.length) return;
+    const o = all.filter(it=>!it.from), dn = o.filter(isDone).length;
+    const key = s.id+c, open = prevOpen.size ? prevOpen.has(key) || show!=='all' : true;
+    html += `<details class="cat" data-k="${key}" ${open?'open':''}><summary><span class="letter">${c}</span><b>${CATS[c]}</b><span class="cat-count num">${o.length?dn+'/'+o.length:'공용'}</span></summary>`;
+    list.forEach(it => {
+      if (it.from){
+        html += `<div class="item shared"><div class="row"><span class="sharebadge" aria-hidden="true">↺</span><div><span class="name">${esc(it.name)}</span><div class="note">${esc(it.note)} · 따로 살 필요 없음</div></div><div class="qty"><span class="tag" style="background:var(--share);color:var(--on-accent)">${it.from} ${STAGE_NAME[it.from]}</span></div></div></div>`;
+        return;
+      }
+      const h = state.have[it.id], d = isDone(it), direct = it.q===0;
+      const shortN = (h===undefined||h==='') ? null : Math.max(0, it.q - Number(h));
+      const c = cost(it,'need'), open = ui.openBuy.has(it.id);
+      html += `<div class="item ${d?'done':''}">
+        <div class="row">
+          <input type="checkbox" id="c_${it.id}" data-id="${it.id}" ${d?'checked':''} aria-label="${esc(it.name)} 준비 완료">
+          <div><label class="name" for="c_${it.id}">${esc(it.name)}</label>
+            <div style="margin-top:3px"><span class="tag ${it.eq?'eq':''}">${it.eq?'장비':'소모품'}</span>${c!==null?`<span class="tag price num">${won(c)}</span>`:''}</div>
+            ${it.note?`<div class="note">${esc(it.note)}</div>`:''}</div>
+          <div class="qty"><span class="goal">필요 <b class="num">${direct?'직접 입력':it.q.toLocaleString('ko-KR')}</b> ${direct?'':esc(it.unit)}</span>
+            <label class="have">보유 <input type="number" min="0" inputmode="numeric" data-have="${it.id}" value="${esc(h)}" aria-label="${esc(it.name)} 보유 수량"></label>
+            ${shortN===null||direct?'':shortN>0?`<span class="short num">${shortN.toLocaleString('ko-KR')} 부족</span>`:'<span class="ok">충분</span>'}
+            <button type="button" class="btn small" data-toggle="${it.id}" aria-expanded="${open}">${open?'구매 정보 닫기':'구매 정보'}</button></div>
+        </div>
+        ${open?buyBox(it):''}
+      </div>`;
+    });
+    html += '</details>';
+  });
+  $('#cats').innerHTML = html || '<p class="muted">조건에 맞는 품목이 없습니다.</p>';
+}
+function renderBudget(){
+  const ownAll = ALL.filter(it => !it.from);
+  const priced = ownAll.filter(it => cost(it,'need') !== null);
+  const totalNeed = priced.reduce((a,it)=>a+cost(it,'need'),0);
+  const totalShort = priced.reduce((a,it)=>a+cost(it,'short'),0);
+  $('#bTiles').innerHTML = `
+    <div class="tile"><span>전체 예상 금액 (필요 수량 기준)</span><b class="num">${won(totalNeed)}</b></div>
+    <div class="tile"><span>앞으로 더 필요한 금액 (부족분 기준)</span><b class="num">${won(totalShort)}</b></div>
+    <div class="tile"><span>가격 입력한 품목</span><b class="num">${priced.length} / ${ownAll.length}</b></div>`;
+  let rows = '', sN = 0, sS = 0;
+  STAGES.forEach(s => {
+    const o = own(s), p = o.filter(it => cost(it,'need')!==null);
+    const n = p.reduce((a,it)=>a+cost(it,'need'),0), sh = p.reduce((a,it)=>a+cost(it,'short'),0);
+    sN += n; sS += sh;
+    rows += `<tr><td><b>${s.id}</b> ${s.name}</td><td class="r num">${p.length}/${o.length}</td><td class="r num">${won(n)}</td><td class="r num">${won(sh)}</td></tr>`;
+  });
+  $('#bStages').innerHTML = `<thead><tr><th>단계</th><th class="r">가격 입력</th><th class="r">예상 금액</th><th class="r">부족분 금액</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td>합계</td><td></td><td class="r num">${won(sN)}</td><td class="r num">${won(sS)}</td></tr></tfoot>`;
+  const st = $('#bStage').value, mode = $('#bMode').value;
+  const list = priced.filter(it => !st || it.stage===st).map(it => ({it, c:cost(it,mode)})).filter(x => mode==='need' || x.c>0).sort((a,b)=>b.c-a.c);
+  const sum = list.reduce((a,x)=>a+x.c,0);
+  $('#bList').innerHTML = list.length ? `<thead><tr><th>품목</th><th>단계</th><th class="r">구매 개수</th><th class="r">금액</th><th>구매처</th></tr></thead><tbody>${list.map(({it,c}) => {
+    const b = state.buy[it.id], url = safeUrl(b.url), per = Math.max(1, Number(b.pack)||1);
+    const n = mode==='short' ? Math.max(0, need(it)-(Number(state.have[it.id])||0)) : need(it);
+    return `<tr><td>${esc(it.name)}<div class="note">${won(Number(b.price))} / ${per}${esc(it.unit)}</div></td><td>${it.stage}</td><td class="r num">${Math.ceil(n/per)}</td><td class="r num"><b>${won(c)}</b></td><td>${url?`<a class="link" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(host(url))}</a>`:'<span class="muted">-</span>'}</td></tr>`;
+  }).join('')}</tbody><tfoot><tr><td colspan="3">합계</td><td class="r num">${won(sum)}</td><td></td></tr></tfoot>`
+  : `<tbody><tr><td class="muted" style="padding:16px">아직 가격을 입력한 품목이 없습니다. 물품표에서 품목의 "구매 정보"를 눌러 링크와 가격을 넣어 주세요.</td></tr></tbody>`;
+}
+function renderRoutine(){
+  const m = $('#month').value, done = state.routine[m] || {};
+  $('#routine').innerHTML = ROUTINE.map(([k,t,d,w]) => `<div class="r"><input type="checkbox" id="r_${k}" data-r="${k}" ${done[k]?'checked':''}><label for="r_${k}"><b>${t}</b><div class="muted" style="font-size:13.5px">${d}</div><div class="when">${w}</div></label></div>`).join('');
+}
+function renderAll(){ renderStages(); renderHero(); renderItems(); renderBudget(); renderRoutine(); }
+
+/* ---------- 저장 ---------- */
+function save(){ dirty = true; clearTimeout(saveTimer); saveTimer = setTimeout(flush, 800); setStatus('저장 대기 중…'); }
+async function flush(){
+  if (!ref) return;
+  if (saving){ pending = true; return; }
+  saving = true; dirty = false;
+  try { await setDoc(ref, {have:state.have, done:state.done, routine:state.routine, buy:state.buy, updatedAt:serverTimestamp()}); setStatus('저장됨'); }
+  catch(e){ console.error(e); setStatus('저장하지 못했습니다. 인터넷 연결을 확인해 주세요 (연결되면 다시 저장됩니다)'); dirty = true; }
+  saving = false; if (pending){ pending = false; flush(); }
+}
+window.addEventListener('beforeunload', e => { if (dirty) { flush(); e.preventDefault(); } });
+
+/* ---------- 이벤트 ---------- */
+$('#stages').addEventListener('click', e => { const b = e.target.closest('button[data-s]'); if(!b) return; ui.stage = b.dataset.s; $('#cats').innerHTML=''; renderStages(); renderHero(); renderItems(); });
+$('#fShow').addEventListener('change', renderItems);
+$('#fShared').addEventListener('change', renderItems);
+$('#month').addEventListener('change', renderRoutine);
+$('#bStage').addEventListener('change', renderBudget);
+$('#bMode').addEventListener('change', renderBudget);
+document.querySelector('.tabs').addEventListener('click', e => {
+  const b = e.target.closest('button[data-tab]'); if(!b) return; ui.tab = b.dataset.tab;
+  document.querySelectorAll('.tabs button').forEach(x => x.setAttribute('aria-selected', String(x===b)));
+  ['items','budget','routine'].forEach(t => $('#pane-'+t).classList.toggle('hidden', t!==ui.tab));
+  if (ui.tab==='budget') renderBudget();
+});
+$('#cats').addEventListener('click', e => {
+  const t = e.target.closest('button[data-toggle]'); if(!t) return;
+  const id = t.dataset.toggle; ui.openBuy.has(id) ? ui.openBuy.delete(id) : ui.openBuy.add(id); renderItems();
+});
+$('#cats').addEventListener('change', e => {
+  const cb = e.target.closest('input[type=checkbox][data-id]');
+  if (cb){ const id = cb.dataset.id; if (cb.checked) state.done[id] = true; else { delete state.done[id]; const it = BYID[id]; if (it && Number(state.have[id]) >= it.q) delete state.have[id]; } renderStages(); renderItems(); save(); return; }
+  const inp = e.target.closest('input[data-have]');
+  if (inp){ const id = inp.dataset.have; if (inp.value==='') delete state.have[id]; else state.have[id] = Math.min(1e6, Math.max(0, Math.floor(Number(inp.value)))); renderStages(); renderItems(); save(); return; }
+  const bf = e.target.closest('[data-buy] input[data-f]');
+  if (bf){
+    const id = bf.closest('[data-buy]').dataset.buy, f = bf.dataset.f, b = {...(state.buy[id]||{})};
+    let v = bf.value.trim();
+    if (f==='url'){ v = v.slice(0, 1000); if (v && !safeUrl(v)) { bf.setCustomValidity('https://로 시작하는 주소를 붙여넣어 주세요'); bf.reportValidity(); return; } bf.setCustomValidity(''); }
+    if (f==='price') v = v==='' ? '' : Math.min(1e9, Math.max(0, Math.round(Number(v))));
+    if (f==='pack' || f==='qty') v = v==='' ? '' : Math.min(1e6, Math.max(f==='pack'?1:0, Math.floor(Number(v))));
+    if (f==='memo') v = v.slice(0,60);
+    if (v==='' || v===null) delete b[f]; else b[f] = v;
+    if (Object.keys(b).length) state.buy[id] = b; else delete state.buy[id];
+    renderStages(); renderHero(); renderItems(); save();
+  }
+});
+$('#routine').addEventListener('change', e => { const cb = e.target.closest('input[data-r]'); if(!cb) return; const m = $('#month').value; state.routine[m] = {...(state.routine[m]||{})}; if (cb.checked) state.routine[m][cb.dataset.r] = true; else delete state.routine[m][cb.dataset.r]; save(); });
+$('#btnCsv').addEventListener('click', () => {
+  const mode = $('#bMode').value, st = $('#bStage').value;
+  const rows = [['단계','대분류','품목','필요 수량','단위','보유','구매 가격','구매 단위 수량','구매 개수','예상 금액','구매 링크','메모']];
+  ALL.filter(it => !it.from && (!st || it.stage===st)).forEach(it => {
+    const b = state.buy[it.id] || {}, per = Math.max(1, Number(b.pack)||1), c = cost(it, mode);
+    const n = mode==='short' ? Math.max(0, need(it)-(Number(state.have[it.id])||0)) : need(it);
+    rows.push([it.stage+' '+STAGE_NAME[it.stage], CATS[it.cat], it.name, need(it), it.unit, state.have[it.id] ?? '', b.price ?? '', b.pack ?? '', b.price ? Math.ceil(n/per) : '', c ?? '', b.url ?? '', b.memo ?? '']);
+  });
+  const csv = '﻿' + rows.map(r => r.map(v => { let s = String(v); if (/^[=+\-@]/.test(s)) s = "'"+s; return '"'+s.replace(/"/g,'""')+'"'; }).join(',')).join('\r\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'})); a.download = '비상비축_예산_'+ym(new Date())+'.csv'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+});
+
+/* ---------- 로그인 ---------- */
+$('#btnLogin').addEventListener('click', async () => {
+  $('#loginErr').textContent = '';
+  const provider = new GoogleAuthProvider();
+  try { await signInWithPopup(auth, provider); }
+  catch(e){
+    if (e.code === 'auth/popup-blocked' || e.code === 'auth/operation-not-supported-in-this-environment') { try { await signInWithRedirect(auth, provider); } catch(e2){ $('#loginErr').textContent = '로그인하지 못했습니다. 잠시 후 다시 시도해 주세요.'; } }
+    else if (e.code !== 'auth/popup-closed-by-user' && e.code !== 'auth/cancelled-popup-request') $('#loginErr').textContent = '로그인하지 못했습니다. 잠시 후 다시 시도해 주세요.';
+  }
+});
+getRedirectResult(auth).catch(() => {});
+$('#btnLogout').addEventListener('click', async () => { if (dirty) await flush(); signOut(auth); });
+
+onAuthStateChanged(auth, user => {
+  if (unsub){ unsub(); unsub = null; }
+  if (!user){ uid = null; ref = null; $('#app').classList.add('hidden'); $('#login').classList.remove('hidden'); return; }
+  uid = user.uid; ref = doc(db, 'users', uid, 'data', 'state');
+  $('#login').classList.add('hidden'); $('#app').classList.remove('hidden');
+  $('#uname').textContent = user.displayName || user.email || '';
+  if (user.photoURL) $('#avatar').src = user.photoURL; else $('#avatar').classList.add('hidden');
+  state = {have:{}, done:{}, routine:{}, buy:{}}; renderAll(); setStatus('기록 불러오는 중…');
+  unsub = onSnapshot(ref, snap => {
+    if (snap.metadata.hasPendingWrites || dirty) return;
+    const d = snap.exists() ? snap.data() : {};
+    state = {have:{...(d.have||{})}, done:{...(d.done||{})}, routine:JSON.parse(JSON.stringify(d.routine||{})), buy:JSON.parse(JSON.stringify(d.buy||{}))};
+    setStatus(snap.metadata.fromCache ? '오프라인 · 저장된 기록을 보여주고 있어요' : (snap.exists() ? '저장됨' : '처음 오셨네요! 1단계부터 체크해 보세요'));
+    renderAll();
+  }, err => { console.error(err); setStatus('기록을 불러오지 못했습니다. 새로고침해 주세요'); });
+});
+
+(function init(){
+  const now = new Date(); let opts = '';
+  for (let i=-2;i<=10;i++){ const d = new Date(now.getFullYear(), now.getMonth()+i, 1); opts += `<option value="${ym(d)}" ${i===0?'selected':''}>${d.getFullYear()}년 ${d.getMonth()+1}월</option>`; }
+  $('#month').innerHTML = opts;
+  $('#bStage').innerHTML += STAGES.map(s => `<option value="${s.id}">${s.id} ${s.name}</option>`).join('');
+})();
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>

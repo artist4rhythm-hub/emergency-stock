@@ -1,0 +1,14 @@
+{
+  "name": "우리집 비상 비축",
+  "short_name": "비상 비축",
+  "description": "상황 5단계별 가족 비상 물품 체크와 예산 계산",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#1a1d18",
+  "theme_color": "#1a1d18",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

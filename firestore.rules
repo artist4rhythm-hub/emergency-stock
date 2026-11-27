@@ -1,0 +1,33 @@
+rules_version = '2';
+
+// 우리집 비상 비축 — Firestore 보안 규칙
+// 원칙: 로그인한 본인만 자기 기록(users/{uid}/data/state)을 읽고 쓸 수 있다. 그 밖의 모든 경로는 차단.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /users/{userId}/data/state {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId) && validState(request.resource.data);
+      allow delete: if isOwner(userId);
+    }
+
+    // 위 경로 외에는 전부 거부
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    // 저장 문서는 정해진 필드만, 정해진 타입으로만 허용
+    function validState(d) {
+      return d.keys().hasOnly(['have', 'done', 'routine', 'buy', 'updatedAt'])
+        && d.have is map && d.have.size() <= 500
+        && d.done is map && d.done.size() <= 500
+        && d.routine is map && d.routine.size() <= 120
+        && d.buy is map && d.buy.size() <= 500
+        && d.updatedAt == request.time;
+    }
+  }
+}
